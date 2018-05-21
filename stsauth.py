@@ -6,6 +6,7 @@ import configparser
 from datetime import datetime
 from dateutil.tz import tzutc
 from xml.etree import ElementTree
+import logging
 
 import boto3
 import click
@@ -17,6 +18,8 @@ try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
+
+logger = logging.getLogger(__name__)
 
 
 ##########################################################################
@@ -44,14 +47,10 @@ except ImportError:
 
 class STSAuth:
     def __init__(self, username, password, credentialsfile,
-                 idpentryurl=None, domain=None, region=None, output=None):
-        # TODO: Clean up the following conditional, it's just non-pythonic:
-        if domain:
-            self.domain = domain + '\\{}'
-            self.username = self.domain.format(username)
-        else:
-            self.domain = None
-            self.username = username
+                 idpentryurl=None, domain=None, region=None,
+                 output=None, force=False):
+        self.domain = domain
+        self.username = username
         self.password = password
         self.credentialsfile = os.path.expanduser(credentialsfile)
         self.idpentryurl = idpentryurl
@@ -59,9 +58,16 @@ class STSAuth:
         self.output = output
         self.session = requests.Session()
 
-        self.session.auth = HttpNtlmAuth(self.username, self.password)
+        self.session.auth = HttpNtlmAuth(self.domain_user, self.password)
         self.config = configparser.RawConfigParser()
         self.config.read(self.credentialsfile)
+
+    @property
+    def domain_user(self):
+        if self.domain:
+            return '{0.domain}\\{0.username}'.format(self)
+        else:
+            return self.username
 
     @property
     def config_file_is_valid(self):
@@ -79,8 +85,6 @@ class STSAuth:
                    'through CLI flags (see `stsauth --help`) and try again.'
                    .format(items, self.credentialsfile))
             valid = False
-        else:
-            valid = True
 
         if not valid:
             click.secho(msg, fg='red')
@@ -100,16 +104,25 @@ class STSAuth:
         were not passed in from the CLI.
         """
         if self.config.has_section('default'):
+            logger.debug('Found \'default\' section in'
+                         ' {0.credentialsfile!r}!'.format(self))
             default = self.config['default']
+            msg = ('Attribute {1!r} not set, using value from {0.credentialsfile!r}')
             if not self.region:
+                logger.debug(msg.format(self, 'region'))
                 self.region = default.get('region')
             if not self.output:
+                logger.debug(msg.format(self, 'output'))
                 self.output = default.get('output')
             if not self.idpentryurl:
+                logger.debug(msg.format(self, 'idpentryurl'))
                 self.idpentryurl = default.get('idpentryurl')
             if not self.domain:
-                self.domain = default.get('domain') + '\\{}'
-                self.username = self.domain.format(self.username)
+                logger.debug(msg.format(self, 'domain'))
+                self.domain = default.get('domain')
+        else:
+            logger.debug('Could not find \'default\' section in'
+                         ' {0.credentialsfile!r}!'.format(self))
 
     def get_saml_response(self, response=None):
         if not response:
@@ -142,9 +155,9 @@ class STSAuth:
             name = input_tag.get('name', '')
             value = input_tag.get('value', '')
             if "user" in name.lower():
-                payload[name] = self.username
+                payload[name] = self.domain_user
             elif "email" in name.lower():
-                payload[name] = self.username
+                payload[name] = self.domain_user
             elif "pass" in name.lower():
                 payload[name] = self.password
             else:
