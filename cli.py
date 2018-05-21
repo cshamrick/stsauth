@@ -4,8 +4,12 @@ import os
 import sys
 
 import click
+import click_log
 
 from stsauth import STSAuth
+from stsauth import logger
+
+click_log.basic_config(logger)
 
 
 @click.command()
@@ -19,17 +23,21 @@ from stsauth import STSAuth
               default='~/.aws/credentials')
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
-@click.version_option('--version', '-v')
-def cli(username, password, idpentryurl, domain, credentialsfile, region, output):
+@click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
+@click.version_option('--version', '-V')
+@click_log.simple_verbosity_option(logger)
+def cli(username, password, idpentryurl, domain,
+        credentialsfile, region, output, force):
     # UNSET any proxy vars that exist in the session
     unset_proxy()
 
     sts_auth = STSAuth(username, password, credentialsfile,
                        idpentryurl, domain, region, output)
+
     if not sts_auth.config_file_is_valid:
         sys.exit(1)
 
-    if not sts_auth.credentials_expired:
+    if not sts_auth.credentials_expired and not force:
         if not click.confirm('Credentials still valid, would you like to continue?'):
             sys.exit(0)
 
@@ -92,4 +100,5 @@ def unset_proxy():
     ]
     for var in env_vars:
         if var in os.environ:
+            logger.debug('Unsetting {!r} environment variable!'.format(var))
             del os.environ[var]
