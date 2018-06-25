@@ -48,13 +48,14 @@ logger = logging.getLogger(__name__)
 
 class STSAuth:
     def __init__(self, username, password, credentialsfile,
-                 idpentryurl=None, domain=None, region=None,
-                 output=None, force=False):
+                 idpentryurl=None, profile=None, domain=None,
+                 region=None, output=None, force=False):
         self.domain = domain
         self.username = username
         self.password = password
         self.credentialsfile = os.path.expanduser(credentialsfile)
         self.idpentryurl = idpentryurl
+        self.profile = profile
         self.region = region
         self.output = output
         self.session = requests.Session()
@@ -93,8 +94,8 @@ class STSAuth:
 
     @property
     def credentials_expired(self):
-        if self.config.has_section('saml'):
-            expiry = self.config.get('saml', 'aws_credentials_expiry', fallback=None)
+        if self.config.has_section(self.profile):
+            expiry = self.config.get(self.profile, 'aws_credentials_expiry', fallback=None)
             if expiry:
                 return from_epoch(expiry) <= datetime.now()
         else:
@@ -197,13 +198,15 @@ class STSAuth:
         )
         return token
 
-    def write_saml_conf(self, token):
-        """Put the credentials into a saml specific profile instead of clobbering
+    def write_saml_conf(self, token, profile=None):
+        """Put the credentials into a specific profile instead of clobbering
         the default credentials.
-        TODO: Need to support passing in the profile instead of defaulting to `saml`
         """
-        if not self.config.has_section('saml'):
-            self.config.add_section('saml')
+        if profile is None:
+            profile = self.profile
+
+        if not self.config.has_section(profile):
+            self.config.add_section(profile)
 
         if not self.config.has_section('default'):
             self.config.add_section('default')
@@ -212,12 +215,12 @@ class STSAuth:
 
         credentials = token.get('Credentials', {})
         expiration = to_epoch(credentials.get('Expiration', ''))
-        self.config.set('saml', 'output', self.output)
-        self.config.set('saml', 'region', self.region)
-        self.config.set('saml', 'aws_access_key_id', credentials.get('AccessKeyId', ''))
-        self.config.set('saml', 'aws_secret_access_key', credentials.get('SecretAccessKey', ''))
-        self.config.set('saml', 'aws_session_token', credentials.get('SessionToken', ''))
-        self.config.set('saml', 'aws_credentials_expiry', expiration)
+        self.config.set(profile, 'output', self.output)
+        self.config.set(profile, 'region', self.region)
+        self.config.set(profile, 'aws_access_key_id', credentials.get('AccessKeyId', ''))
+        self.config.set(profile, 'aws_secret_access_key', credentials.get('SecretAccessKey', ''))
+        self.config.set(profile, 'aws_session_token', credentials.get('SessionToken', ''))
+        self.config.set(profile, 'aws_credentials_expiry', expiration)
 
         # Write the AWS STS token into the AWS credential file
         with open(self.credentialsfile, 'w') as f:
@@ -265,12 +268,6 @@ class STSAuth:
                 account_lookup[i] = role['attr']
                 i += 1
         return account_roles, account_lookup
-
-    # print("Please choose the role you would like to assume:")
-    # for acct_id, roles in print_roles.items():
-    #     print("\nAccount ID {}:".format(acct_id))
-    #     for role in roles:
-    #             print('[{id}]: {label}'.format(**role))
 
     def parse_roles_from_assertion(self, xml_body):
         roles = []
