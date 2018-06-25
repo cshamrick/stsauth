@@ -45,14 +45,15 @@ def cli(username, password, idpentryurl, domain,
     assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
     awsroles = sts_auth.parse_roles_from_assertion(assertion)
+    account_roles, account_lookup = sts_auth.format_roles_for_display(awsroles)
 
     # If more than one role returned, ask the user which one they want,
     # otherwise just proceed
     click.echo("")
-    if len(awsroles) > 1:
-        role_arn, principal_arn = prompt_for_role(awsroles)
+    if len(account_lookup) > 1:
+        role_arn, principal_arn = prompt_for_role(account_roles, account_lookup)
     else:
-        role_arn, principal_arn = awsroles[0].split(',')
+        role_arn, principal_arn = account_lookup.get(0).split(',')
 
     click.secho("\nRequesting credentials for role: " + role_arn, fg='green')
 
@@ -78,20 +79,32 @@ def cli(username, password, idpentryurl, domain,
     click.secho(msg, fg='green')
 
 
-def prompt_for_role(roles):
-    click.secho("Please choose the role you would like to assume:", fg='green')
-    for i, awsrole in enumerate(roles):
-        print('[{}]: {}'.format(i, awsrole.split(',')[0]))
-    click.echo("Selection: ", nl=False)
-    selectedroleindex = input()
+def prompt_for_role(account_roles, account_lookup):
+    for acct_id, roles in account_roles.items():
+        print('\nAccount {}:'.format(acct_id))
+        for role in roles:
+            print('[{key}]: {label}'.format(**role))
+    click.echo('Selection: ', nl=False)
+    selected_role_index = input()
 
     # Basic sanity check of input
-    if int(selectedroleindex) not in range(len(roles)):
+    if not role_selection_is_valid(selected_role_index, account_lookup):
+        return prompt_for_role(account_roles, account_lookup)
+
+    return account_lookup.get(int(selected_role_index)).split(',')
+
+def role_selection_is_valid(selection, account_lookup):
+    try:
+        int(selection)
+    except ValueError:
         click.secho('You selected an invalid role index, please try again', fg='red')
-        prompt_for_role(roles)
+        return False
 
-    return roles[int(selectedroleindex)].split(',')
+    if int(selection) not in range(len(account_lookup)):
+        click.secho('You selected an invalid role index, please try again', fg='red')
+        return False
 
+    return True
 
 def unset_proxy():
     env_vars = [
