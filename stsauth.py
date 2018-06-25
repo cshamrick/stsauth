@@ -3,6 +3,7 @@ import re
 import sys
 import base64
 import configparser
+from collections import defaultdict
 from datetime import datetime
 from dateutil.tz import tzutc
 from xml.etree import ElementTree
@@ -187,6 +188,7 @@ class STSAuth:
             # TODO: Proper exception and message
             raise
             sys.exit(1)
+
         token = sts.assume_role_with_saml(
             RoleArn=role_arn,
             PrincipalArn=principal_arn,
@@ -233,6 +235,42 @@ class STSAuth:
                 roles.insert(index, newrole)
                 roles.remove(role)
         return roles
+
+    def get_account_id_from_role(self, role):
+        acct_id_re = re.compile(r'::(\d+):')
+        acct_ids = re.search(acct_id_re, role)
+        if acct_ids.groups():
+            for ids in acct_ids.groups():
+                if len(ids) == 12:
+                    # TODO: get all account ids and compare just to be sure
+                    # TODO: Could potentially return nothing
+                    return ids
+        else:
+            raise Exception('Missing or malformed account ID!')
+
+    def format_roles_for_display(self, attrs):
+        account_roles = defaultdict(list)
+        account_lookup = {}
+        for attr in attrs:
+            _attr = attr.split(',')
+            role = _attr[0] if ':role/' in _attr[0] else _attr[1]
+            acct_id = self.get_account_id_from_role(role)
+            acct_name = role.split('/')[1]
+            item = {'label': acct_name, 'attr': attr, 'id': acct_id}
+            account_roles[acct_id].append(item)
+        i = 0
+        for _, roles in account_roles.items():
+            for role in roles:
+                role['key'] = i
+                account_lookup[i] = role['attr']
+                i += 1
+        return account_roles, account_lookup
+
+    # print("Please choose the role you would like to assume:")
+    # for acct_id, roles in print_roles.items():
+    #     print("\nAccount ID {}:".format(acct_id))
+    #     for role in roles:
+    #             print('[{id}]: {label}'.format(**role))
 
     def parse_roles_from_assertion(self, xml_body):
         roles = []
