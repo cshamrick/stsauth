@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="stsauth",
-    version='0.1.4',
+    version='0.2.0',
     description='CLI tool for fetching AWS tokens.',
     py_modules=['stsauth', 'cli'],
     classifiers=[

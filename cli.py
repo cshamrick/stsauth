@@ -3,17 +3,25 @@
 import os
 import re
 import sys
+import configparser
 
 import click
 import click_log
 
+import stsauth
 from stsauth import STSAuth
 from stsauth import logger
 
 click_log.basic_config(logger)
 
 
-@click.command()
+@click.group()
+@click_log.simple_verbosity_option(logger)
+def cli():
+    pass
+
+
+@cli.command()
 @click.option('--username', '-u', help='IdP endpoint username.', prompt=True)
 @click.option('--password', '-p', prompt=True, hide_input=True,
               confirmation_prompt=False, help='Program will prompt for input if not provided.')
@@ -27,8 +35,7 @@ click_log.basic_config(logger)
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 @click.version_option('--version', '-V')
-@click_log.simple_verbosity_option(logger)
-def cli(username, password, idpentryurl, domain,
+def authenticate(username, password, idpentryurl, domain,
         credentialsfile, profile, region, output, force):
     # UNSET any proxy vars that exist in the session
     unset_proxy()
@@ -71,11 +78,13 @@ def cli(username, password, idpentryurl, domain,
     # Give the user some basic info as to what has just happened
     msg = (
         '\n------------------------------------------------------------\n'
-        'Your new access key pair has been stored in the AWS configuration '
-        'file {config_file} under the saml profile.\n'
-        'Note that it will expire at {expiry}.\n'
-        'After this time, you may safely rerun this script to refresh your access key pair.\n'
-        'To use this credential, call the AWS CLI with the --profile option '
+        'Your new access key pair has been generated with the following details:\n'
+        '------------------------------------------------------------\n'
+        'File Path: {config_file}\n'
+        'Profile: {role}\n'
+        'Expiration Date: {expiry}\n'
+        '------------------------------------------------------------\n'
+        'To use this credential, call the AWS CLI with the --profile option:\n'
         '(e.g. aws --profile {role} ec2 describe-instances).\n'
         '--------------------------------------------------------------\n'
         .format(config_file=sts_auth.credentialsfile,
@@ -84,13 +93,48 @@ def cli(username, password, idpentryurl, domain,
     )
     click.secho(msg, fg='green')
 
+@cli.command()
+@click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
+              default='~/.aws/credentials')
+def profiles(credentialsfile):
+    credentialsfile = os.path.expanduser(credentialsfile)
+    config = configparser.RawConfigParser()
+    config.read(credentialsfile)
+    profiles = config.sections()
+    headers = ['Profile', 'Expire Date']
+    expiry = []
+
+    for profile in profiles:
+        _expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+        _expiry = stsauth.from_epoch(_expiry) if _expiry else 'No Expiry Set'
+        expiry.append(str(_expiry))
+
+    profile_max_len = len(max(profiles, key=len))
+    expiry_max_len = len(max(expiry, key=len))
+    row_format = "{item_0:<{item_0_len}} {item_1:<{item_1_len}}"
+    print(row_format.format(
+        item_0=headers[0],
+        item_1=headers[1],
+        item_0_len=profile_max_len,
+        item_1_len=expiry_max_len)
+    )
+    print('-'*profile_max_len + ' ' + '-'*expiry_max_len)
+    for profile in zip(profiles, expiry):
+        print(row_format.format(
+            item_0=profile[0],
+            item_1=profile[1],
+            item_0_len=profile_max_len,
+            item_1_len=expiry_max_len)
+        )
 
 def prompt_for_role(account_roles, account_lookup):
+    click.secho('Please choose the role you would like to assume:', fg='green')
     for acct_id, roles in account_roles.items():
-        print('\nAccount {}:'.format(acct_id))
+        click.secho('Account {}:'.format(acct_id), fg='blue')
         for role in roles:
-            print('[{key}]: {label}'.format(**role))
-    click.echo('Selection: ', nl=False)
+            click.secho('[{key}]: {label}'.format(**role))
+        click.secho('')
+    click.secho('Selection: ', nl=False, fg='green')
     selected_role_index = input()
 
     # Basic sanity check of input
