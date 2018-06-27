@@ -40,8 +40,19 @@ aws_secret_access_key = ''
 
 ## Usage
 ```
-$ stsauth --help
-Usage: stsauth [OPTIONS]
+$ stsauth
+Usage: stsauth [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -v, --verbosity LVL  Either CRITICAL, ERROR, WARNING, INFO or DEBUG
+  --help               Show this message and exit.
+
+Commands:
+  authenticate
+  profiles
+
+$ stsauth authenticate --help
+Usage: stsauth authenticate [OPTIONS]
 
 Options:
   -u, --username TEXT             IdP endpoint username.
@@ -51,29 +62,56 @@ Options:
                                   authentication process.
   -d, --domain TEXT               The active directory domain.
   -c, --credentialsfile TEXT      Path to AWS credentials file.
+  -l, --profile TEXT              Name of config profile.
   -r, --region TEXT               The AWS region to use. ex: us-east-1
   -o, --output [json|text|table]
-  -v                              Show the version and exit.
+  -f, --force                     Auto-accept confirmation prompts.
+  -V                              Show the version and exit.
   --help                          Show this message and exit.
 
-$ stsauth
+
+$ stsauth authenticate
 Username: username
-Password:
+Password: 
 
 Please choose the role you would like to assume:
-[ 0 ]:  arn:aws:iam::000000000001:role/ADFS-Account-One
-[ 1 ]:  arn:aws:iam::000000000002:role/ADFS-Account-Two
-[ 2 ]:  arn:aws:iam::000000000003:role/ADFS-Account-Three
-Selection: 0
+Account 000000000000:
+[0]: ADFS-Account-One
+[1]: ADFS-Account-Two
+
+Account 000000000001:
+[2]: ADFS-Account-One
+
+Account 000000000002:
+[3]: ADFS-Account-One
+[4]: ADFS-Account-Two
+
+Selection: 2
 
 Requesting credentials for role: arn:aws:iam::000000000001:role/ADFS-Account-One
 
 ------------------------------------------------------------
-Your new access key pair has been stored in the AWS configuration file /Users/username/.aws/credentials under the saml profile.
-Note that it will expire at 2018-05-07T13:23:22Z.
-After this time, you may safely rerun this script to refresh your access key pair.
-To use this credential, call the AWS CLI with the --profile option (e.g. aws --profile saml ec2 describe-instances).
+Your new access key pair has been generated with the following details:
+------------------------------------------------------------
+File Path: /Users/username/.aws/credentials
+Profile: 000000000001-ADFS-Account-One
+Expiration Date: 2018-06-27 16:29:01+00:00
+------------------------------------------------------------
+To use this credential, call the AWS CLI with the --profile option:
+(e.g. aws --profile 000000000001-ADFS-Account-One ec2 describe-instances).
 --------------------------------------------------------------
+
+$ stsauth profiles
+Profile                           Expire Date        
+--------------------------------- -------------------
+default                           No Expiry Set      
+saml                              2018-06-25 16:32:20
+000000000000-ADFS-Account-One     2018-06-25 16:36:27
+000000000000-ADFS-Account-Two     2018-06-25 16:47:51
+000000000001-ADFS-Account-One     2018-06-27 10:04:46
+000000000002-ADFS-Account-One     2018-06-27 11:23:23
+000000000002-ADFS-Account-Two     2018-06-27 11:28:22
+
 ```
 
 ## Credits
