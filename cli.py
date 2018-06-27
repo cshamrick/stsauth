@@ -17,6 +17,7 @@ click_log.basic_config(logger)
 
 @click.group()
 @click_log.simple_verbosity_option(logger)
+@click.version_option()
 def cli():
     pass
 
@@ -34,7 +35,6 @@ def cli():
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
-@click.version_option('--version', '-V')
 def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, region, output, force):
     # UNSET any proxy vars that exist in the session
