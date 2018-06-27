@@ -30,13 +30,13 @@ def cli():
 @click.option('--domain', '-d', help='The active directory domain.')
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
-@click.option('--profile', '-l', help='Name of config profile.', default='saml')
+@click.option('--profile', '-l', help='Name of config profile.', default=None)
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 @click.version_option('--version', '-V')
 def authenticate(username, password, idpentryurl, domain,
-        credentialsfile, profile, region, output, force):
+                 credentialsfile, profile, region, output, force):
     # UNSET any proxy vars that exist in the session
     unset_proxy()
 
@@ -47,32 +47,31 @@ def authenticate(username, password, idpentryurl, domain,
         sys.exit(1)
 
     if not sts_auth.credentials_expired and not force:
-        msg = 'Credentials for profile {!r} valid, would you like to continue?'
-        if not click.confirm(msg.format(sts_auth.profile)):
-            sys.exit(0)
+        prompt_for_expired_credentials(sts_auth.profile)
 
     sts_auth.parse_config_file()
+
     assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
     awsroles = sts_auth.parse_roles_from_assertion(assertion)
     account_roles, account_lookup = sts_auth.format_roles_for_display(awsroles)
 
-    # If more than one role returned, ask the user which one they want,
-    # otherwise just proceed
-    click.echo("")
-    if len(account_lookup) > 1:
-        role_arn, principal_arn = prompt_for_role(account_roles, account_lookup)
-    else:
-        role_arn, principal_arn = account_lookup.get(0).split(',')
+    role_arn, principal_arn = parse_arn_from_input(account_roles, account_lookup, profile)
+
+    # Generate a safe-name for the profile based on acct no. and role
+    role_for_section = parse_role_for_profile(role_arn)
+
+    # Update to use the selected profile and re-check expiry
+    sts_auth.profile = role_for_section
+    if not profile and not sts_auth.credentials_expired and not force:
+        prompt_for_expired_credentials(sts_auth.profile)
 
     click.secho("\nRequesting credentials for role: " + role_arn, fg='green')
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
     token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, assertion)
 
-
     # Put the credentials into a role specific section
-    role_for_section = parse_role_for_profile(role_arn)
     sts_auth.write_saml_conf(token, role_for_section)
 
     # Give the user some basic info as to what has just happened
@@ -92,6 +91,7 @@ def authenticate(username, password, idpentryurl, domain,
                 role=role_for_section)
     )
     click.secho(msg, fg='green')
+
 
 @cli.command()
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
@@ -118,7 +118,7 @@ def profiles(credentialsfile):
         item_0_len=profile_max_len,
         item_1_len=expiry_max_len)
     )
-    print('-'*profile_max_len + ' ' + '-'*expiry_max_len)
+    print('-' * profile_max_len + ' ' + '-' * expiry_max_len)
     for profile in zip(profiles, expiry):
         print(row_format.format(
             item_0=profile[0],
@@ -126,6 +126,7 @@ def profiles(credentialsfile):
             item_0_len=profile_max_len,
             item_1_len=expiry_max_len)
         )
+
 
 def prompt_for_role(account_roles, account_lookup):
     click.secho('Please choose the role you would like to assume:', fg='green')
@@ -143,6 +144,7 @@ def prompt_for_role(account_roles, account_lookup):
 
     return account_lookup.get(int(selected_role_index)).split(',')
 
+
 def role_selection_is_valid(selection, account_lookup):
     try:
         int(selection)
@@ -156,6 +158,7 @@ def role_selection_is_valid(selection, account_lookup):
 
     return True
 
+
 def unset_proxy():
     env_vars = [
         "http_proxy", "https_proxy", "no_proxy", "all_proxy", "ftp_proxy",
@@ -165,6 +168,7 @@ def unset_proxy():
         if var in os.environ:
             logger.debug('Unsetting {!r} environment variable!'.format(var))
             del os.environ[var]
+
 
 def parse_role_for_profile(role):
     account_re = re.compile(r'::(\d+):')
@@ -179,3 +183,30 @@ def parse_role_for_profile(role):
         role_name = _role_name[1]
 
     return '{}-{}'.format(account_id, role_name)
+
+
+def prompt_for_expired_credentials(profile):
+    click.secho('\nCredentials for the following profile are still valid:', fg='red')
+    click.secho(profile, fg='red')
+    click.echo()
+    msg = click.style('Would you like to continue?', fg='red')
+    click.confirm(msg, abort=True)
+
+
+def parse_arn_from_input(account_roles, account_lookup, profile=None):
+    # If more than one role returned, ask the user which one they want,
+    # otherwise just proceed
+    click.echo()
+    if profile:
+        acct_number = profile.split('-')[0]
+        role_name = '-'.join(profile.split('-')[1:])
+        arn = next((item for item in account_roles[acct_number] if item['label'] == role_name), None)
+        if arn:
+            role_arn, principal_arn = arn['attr'].split(',')
+
+    elif len(account_lookup) > 1:
+        role_arn, principal_arn = prompt_for_role(account_roles, account_lookup)
+    else:
+        role_arn, principal_arn = account_lookup.get(0).split(',')
+
+    return role_arn, principal_arn
