@@ -45,6 +45,7 @@ Usage: stsauth [OPTIONS] COMMAND [ARGS]...
 
 Options:
   -v, --verbosity LVL  Either CRITICAL, ERROR, WARNING, INFO or DEBUG
+  --version            Show the version and exit.
   --help               Show this message and exit.
 
 Commands:
@@ -66,9 +67,7 @@ Options:
   -r, --region TEXT               The AWS region to use. ex: us-east-1
   -o, --output [json|text|table]
   -f, --force                     Auto-accept confirmation prompts.
-  -V                              Show the version and exit.
   --help                          Show this message and exit.
-
 
 $ stsauth authenticate
 Username: username
@@ -100,6 +99,13 @@ Expiration Date: 2018-06-27 16:29:01+00:00
 To use this credential, call the AWS CLI with the --profile option:
 (e.g. aws --profile 000000000001-ADFS-Account-One ec2 describe-instances).
 --------------------------------------------------------------
+
+$ stsauth profiles --help
+Usage: stsauth profiles [OPTIONS]
+
+Options:
+  -c, --credentialsfile TEXT  Path to AWS credentials file.
+  --help                      Show this message and exit.
 
 $ stsauth profiles
 Profile                           Expire Date        
