@@ -47,16 +47,21 @@ def authenticate(username, password, idpentryurl, domain,
         sys.exit(1)
 
     if not sts_auth.credentials_expired and not force:
-        prompt_for_expired_credentials(sts_auth.profile)
+        prompt_for_unexpired_credentials(sts_auth.profile)
 
     sts_auth.parse_config_file()
 
     assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
-    awsroles = sts_auth.parse_roles_from_assertion(assertion)
-    account_roles, account_lookup = sts_auth.format_roles_for_display(awsroles)
+    awsroles = stsauth.parse_roles_from_assertion(assertion)
+    account_roles, account_lookup = stsauth.format_roles_for_display(awsroles)
 
-    role_arn, principal_arn = parse_arn_from_input(account_roles, account_lookup, profile)
+    if profile:
+        role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
+    elif len(account_lookup) > 1:
+        role_arn, principal_arn = prompt_for_role(account_roles, account_lookup)
+    else:
+        role_arn, principal_arn = account_lookup.get(0).split(',')
 
     # Generate a safe-name for the profile based on acct no. and role
     role_for_section = parse_role_for_profile(role_arn)
@@ -64,7 +69,7 @@ def authenticate(username, password, idpentryurl, domain,
     # Update to use the selected profile and re-check expiry
     sts_auth.profile = role_for_section
     if not profile and not sts_auth.credentials_expired and not force:
-        prompt_for_expired_credentials(sts_auth.profile)
+        prompt_for_unexpired_credentials(sts_auth.profile)
 
     click.secho("\nRequesting credentials for role: " + role_arn, fg='green')
 
@@ -72,7 +77,7 @@ def authenticate(username, password, idpentryurl, domain,
     token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, assertion)
 
     # Put the credentials into a role specific section
-    sts_auth.write_saml_conf(token, role_for_section)
+    sts_auth.write_to_configuration_file(token, role_for_section)
 
     # Give the user some basic info as to what has just happened
     msg = (
@@ -97,6 +102,17 @@ def authenticate(username, password, idpentryurl, domain,
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
 def profiles(credentialsfile):
+    """Lists the profile details from the credentialsfile.
+
+    Prints a list to the cli containing a tabular list of Profile and Expiry:
+    Profile             Expire Date
+    ------------------- -----------------
+    test                2018-01-01 00:00:00
+    ......
+
+    Args:
+        credentialsfile: the file containing the profile details.
+    """
     credentialsfile = os.path.expanduser(credentialsfile)
     config = configparser.RawConfigParser()
     config.read(credentialsfile)
@@ -105,9 +121,9 @@ def profiles(credentialsfile):
     expiry = []
 
     for profile in profiles:
-        _expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-        _expiry = stsauth.from_epoch(_expiry) if _expiry else 'No Expiry Set'
-        expiry.append(str(_expiry))
+        profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+        profile_expiry = stsauth.from_epoch(profile_expiry) if profile_expiry else 'No Expiry Set'
+        expiry.append(str(profile_expiry))
 
     profile_max_len = len(max(profiles, key=len))
     expiry_max_len = len(max(expiry, key=len))
@@ -129,6 +145,18 @@ def profiles(credentialsfile):
 
 
 def prompt_for_role(account_roles, account_lookup):
+    """Prompts the user to select a role based off what roles are available to them.
+
+    Provides a prompt listing out accounts available to the user and does some basic
+    checks to validate their input. If the input is invalid, re-prompts the user.
+
+    Args:
+        account_roles: list of account and role details
+        account_lookup: dictionary mapping selction values to ARNs.
+
+    Returns:
+        Set containing the Role ARN  and Principal ARN
+    """
     click.secho('Please choose the role you would like to assume:', fg='green')
     for acct_id, roles in account_roles.items():
         click.secho('Account {}:'.format(acct_id), fg='blue')
@@ -142,24 +170,38 @@ def prompt_for_role(account_roles, account_lookup):
     if not role_selection_is_valid(selected_role_index, account_lookup):
         return prompt_for_role(account_roles, account_lookup)
 
-    return account_lookup.get(int(selected_role_index)).split(',')
+    role_arn, principal_arn = account_lookup.get(int(selected_role_index)).split(',')
+
+    return role_arn, principal_arn
 
 
 def role_selection_is_valid(selection, account_lookup):
+    """Checks that the user input is a valid selection
+
+    Args:
+        selection: Value the user entered.
+        account_lookup: List of valid choices to check against.
+
+    Returns:
+        Boolean reflecting the validity of given choice.
+    """
+    err_msg = 'You selected an invalid role index, please try again'
     try:
         int(selection)
     except ValueError:
-        click.secho('You selected an invalid role index, please try again', fg='red')
+        click.secho(err_msg, fg='red')
         return False
 
     if int(selection) not in range(len(account_lookup)):
-        click.secho('You selected an invalid role index, please try again', fg='red')
+        click.secho(err_msg, fg='red')
         return False
 
     return True
 
 
 def unset_proxy():
+    """Remove proxy settings from the current process
+    """
     env_vars = [
         "http_proxy", "https_proxy", "no_proxy", "all_proxy", "ftp_proxy",
         "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY", "FTP_PROXY"
@@ -171,10 +213,18 @@ def unset_proxy():
 
 
 def parse_role_for_profile(role):
-    account_re = re.compile(r'::(\d+):')
+    """Returns a 'safe' profile name for a given role.
+
+    Args:
+        role: The role to generate a profile name for.
+
+    Returns:
+        Formatted profile name.
+    """
     account_id = '000000000000'
     role_name = 'Unknown-Role-Name'
 
+    account_re = re.compile(r'::(\d+):')
     _account_id = re.search(account_re, role)
     _role_name = role.split('/')
     if _account_id.groups():
@@ -185,7 +235,12 @@ def parse_role_for_profile(role):
     return '{}-{}'.format(account_id, role_name)
 
 
-def prompt_for_expired_credentials(profile):
+def prompt_for_unexpired_credentials(profile):
+    """Prompts the user if the given profile's credentials have not expired yet.
+
+    Args:
+        profile: The profile for which a user is requesting credentials.
+    """
     click.secho('\nCredentials for the following profile are still valid:', fg='red')
     click.secho(profile, fg='red')
     click.echo()
@@ -193,20 +248,31 @@ def prompt_for_expired_credentials(profile):
     click.confirm(msg, abort=True)
 
 
-def parse_arn_from_input(account_roles, account_lookup, profile=None):
-    # If more than one role returned, ask the user which one they want,
-    # otherwise just proceed
-    click.echo()
-    if profile:
-        acct_number = profile.split('-')[0]
-        role_name = '-'.join(profile.split('-')[1:])
-        arn = next((item for item in account_roles[acct_number] if item['label'] == role_name), None)
-        if arn:
-            role_arn, principal_arn = arn['attr'].split(',')
+def parse_arn_from_input_profile(account_roles, profile):
+    """Given a list of account/role details, return the ARNs for the given profile
 
-    elif len(account_lookup) > 1:
-        role_arn, principal_arn = prompt_for_role(account_roles, account_lookup)
+    Args:
+        account_roles: List of dictionaries containing account/role details
+        profile: A user-provided profile to retreive the ARN from the account_roles.
+
+    Returns:
+        A set with the Role ARN and the Principal ARN. If the profile does not exist, exits the cli.
+    """
+    click.echo()
+    profile_split = profile.split('-')
+    acct_number = profile_split[0]
+    role_name = '-'.join(profile_split[1:])
+    arn = next((item for item in account_roles[acct_number] if item['label'] == role_name), None)
+    if arn:
+        role_arn, principal_arn = arn['attr'].split(',')
     else:
-        role_arn, principal_arn = account_lookup.get(0).split(',')
+        click.secho(
+            'Profile not found!\n'
+            'Please check `stsauth profiles` for a list of available profiles\n'
+            'or use `stsauth authenticate` to view profiles available to your user.\n'
+            'The profile may no longer be available to your user.',
+            fg='red'
+        )
+        sys.exit()
 
     return role_arn, principal_arn
