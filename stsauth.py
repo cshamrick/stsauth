@@ -3,6 +3,7 @@ import re
 import sys
 import base64
 import configparser
+from collections import defaultdict
 from datetime import datetime
 from dateutil.tz import tzutc
 from xml.etree import ElementTree
@@ -47,13 +48,14 @@ logger = logging.getLogger(__name__)
 
 class STSAuth:
     def __init__(self, username, password, credentialsfile,
-                 idpentryurl=None, domain=None, region=None,
-                 output=None, force=False):
+                 idpentryurl=None, profile=None, domain=None,
+                 region=None, output=None, force=False):
         self.domain = domain
         self.username = username
         self.password = password
         self.credentialsfile = os.path.expanduser(credentialsfile)
         self.idpentryurl = idpentryurl
+        self.profile = profile
         self.region = region
         self.output = output
         self.session = requests.Session()
@@ -92,8 +94,8 @@ class STSAuth:
 
     @property
     def credentials_expired(self):
-        if self.config.has_section('saml'):
-            expiry = self.config.get('saml', 'aws_credentials_expiry', fallback=None)
+        if self.config.has_section(self.profile):
+            expiry = self.config.get(self.profile, 'aws_credentials_expiry', fallback=None)
             if expiry:
                 return from_epoch(expiry) <= datetime.now()
         else:
@@ -186,7 +188,7 @@ class STSAuth:
         except Exception:
             # TODO: Proper exception and message
             raise
-            sys.exit(1)
+
         token = sts.assume_role_with_saml(
             RoleArn=role_arn,
             PrincipalArn=principal_arn,
@@ -195,13 +197,21 @@ class STSAuth:
         )
         return token
 
-    def write_saml_conf(self, token):
-        """Put the credentials into a saml specific profile instead of clobbering
-        the default credentials.
-        TODO: Need to support passing in the profile instead of defaulting to `saml`
+    def write_to_configuration_file(self, token, profile=None):
+        """Store credentials in a specific profile.
+
+        Takes the credentials and details from the token provided and writes them out to a
+        configuration
+
+        Args:
+            token: Object containing the credentials to write out.
+            profile: optional profile paramater. Uses the class profile if undefined
         """
-        if not self.config.has_section('saml'):
-            self.config.add_section('saml')
+        if profile is None:
+            profile = self.profile
+
+        if not self.config.has_section(profile):
+            self.config.add_section(profile)
 
         if not self.config.has_section('default'):
             self.config.add_section('default')
@@ -210,48 +220,137 @@ class STSAuth:
 
         credentials = token.get('Credentials', {})
         expiration = to_epoch(credentials.get('Expiration', ''))
-        self.config.set('saml', 'output', self.output)
-        self.config.set('saml', 'region', self.region)
-        self.config.set('saml', 'aws_access_key_id', credentials.get('AccessKeyId', ''))
-        self.config.set('saml', 'aws_secret_access_key', credentials.get('SecretAccessKey', ''))
-        self.config.set('saml', 'aws_session_token', credentials.get('SessionToken', ''))
-        self.config.set('saml', 'aws_credentials_expiry', expiration)
+        self.config.set(profile, 'output', self.output)
+        self.config.set(profile, 'region', self.region)
+        self.config.set(profile, 'aws_access_key_id', credentials.get('AccessKeyId', ''))
+        self.config.set(profile, 'aws_secret_access_key', credentials.get('SecretAccessKey', ''))
+        self.config.set(profile, 'aws_session_token', credentials.get('SessionToken', ''))
+        self.config.set(profile, 'aws_credentials_expiry', expiration)
 
         # Write the AWS STS token into the AWS credential file
         with open(self.credentialsfile, 'w') as f:
             self.config.write(f)
 
-    def format_role_order(self, roles):
-        # The format of the attribute value should be role_arn,principal_arn
-        # but lots of blogs list it as principal_arn,role_arn so let's reverse
-        # them if needed
-        for role in roles:
-            chunks = role.split(',')
-            if 'saml-provider' in chunks[0]:
-                newrole = chunks[1] + ',' + chunks[0]
-                index = roles.index(role)
-                roles.insert(index, newrole)
-                roles.remove(role)
-        return roles
 
-    def parse_roles_from_assertion(self, xml_body):
-        roles = []
-        root = ElementTree.fromstring(base64.b64decode(xml_body))
-        role = 'https://aws.amazon.com/SAML/Attributes/Role'
-        attr_base = '{urn:oasis:names:tc:SAML:2.0:assertion}'
-        attr = '{}Attribute'.format(attr_base)
-        attr_value = '{}Value'.format(attr)
-        for saml2attr in root.iter(attr):
-            if saml2attr.get('Name') == role:
-                for saml2attrvalue in saml2attr.iter(attr_value):
-                    roles.append(saml2attrvalue.text)
-        roles = self.format_role_order(roles)
-        return roles
+def format_roles_for_display(attrs):
+    """Formats role ARNs for display to the user and a dictionary for lookup.
+
+    We need two objects so that we can easily display a pretty list to the user
+    which requests their input. Once they provide input, we need to determine
+    which ARN was mapped to their input.
+
+    Args:
+        attrs: List of ARNs/roles.
+
+    Returns:
+        List of dictionaries used to display to the user
+        Dictionary mapping input values to ARNs
+    """
+    account_roles = defaultdict(list)
+    account_lookup = {}
+    for attr in attrs:
+        _attr = attr.split(',')
+        role = _attr[0] if ':role/' in _attr[0] else _attr[1]
+        acct_id = get_account_id_from_role(role)
+        acct_name = role.split('/')[1]
+        item = {'label': acct_name, 'attr': attr, 'id': acct_id}
+        account_roles[acct_id].append(item)
+    i = 0
+    for _, roles in account_roles.items():
+        for role in roles:
+            role['key'] = i
+            account_lookup[i] = role['attr']
+            i += 1
+    return account_roles, account_lookup
+
+
+def parse_roles_from_assertion(xml_body):
+    """Given the xml_body assertion, return a list of roles.
+
+    Args:
+        xml_body: XML Body containing roles returned from AWS.
+
+    Returns:
+        List of roles available to the user.
+    """
+    roles = []
+    root = ElementTree.fromstring(base64.b64decode(xml_body))
+    role = 'https://aws.amazon.com/SAML/Attributes/Role'
+    attr_base = '{urn:oasis:names:tc:SAML:2.0:assertion}'
+    attr = '{}Attribute'.format(attr_base)
+    attr_value = '{}Value'.format(attr)
+    for saml2attr in root.iter(attr):
+        if saml2attr.get('Name') == role:
+            for saml2attrvalue in saml2attr.iter(attr_value):
+                roles.append(saml2attrvalue.text)
+    roles = format_role_order(roles)
+    return roles
+
+
+def format_role_order(roles):
+    """Given roles, returns them in the format: role_arn,principal_arn.
+
+    The format of the attribute value should be role_arn,principal_arn
+    but lots of blogs list it as principal_arn,role_arn so let's reverse
+    them if needed.
+
+    Args:
+        roles: List of roles.
+
+    Returns:
+        List of roles in the format: role_arn,principal_arn
+    """
+    for role in roles:
+        chunks = role.split(',')
+        if 'saml-provider' in chunks[0]:
+            newrole = chunks[1] + ',' + chunks[0]
+            index = roles.index(role)
+            roles.insert(index, newrole)
+            roles.remove(role)
+    return roles
+
+
+def get_account_id_from_role(role):
+    """Parse the account ID from the role.
+
+    Args:
+        role: Role string with account ID.
+
+    Returns:
+        Account ID.
+
+    Raises:
+        Exception: An error occured with getting the Account ID.
+    """
+    acct_id_re = re.compile(r'::(\d+):')
+    acct_ids = re.search(acct_id_re, role)
+    if acct_ids.groups():
+        for ids in acct_ids.groups():
+            if len(ids) == 12:
+                return ids
+    else:
+        raise Exception('Missing or malformed account ID!')
 
 
 def to_epoch(dt):
+    """Given a datetime object, return seconds since epoch.
+
+    Args:
+        dt: Datetime object
+
+    Returns:
+        seconds since epoch for dt
+    """
     return (dt - datetime(1970, 1, 1, tzinfo=tzutc())).total_seconds()
 
 
 def from_epoch(seconds):
+    """Given seconds since epoch, return a datetime object
+
+    Args:
+        seconds: Seconds since epoch
+
+    Returns:
+        datetime representation of seconds since epoch
+    """
     return datetime.fromtimestamp(int(float(seconds)))
