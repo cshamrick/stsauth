@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 class STSAuth:
     def __init__(self, username, password, credentialsfile,
                  idpentryurl=None, profile=None, domain=None,
-                 region=None, output=None, force=False):
+                 region=None, output=None, force=False, retries=1):
         self.domain = domain
         self.username = username
         self.password = password
@@ -58,6 +58,7 @@ class STSAuth:
         self.profile = profile
         self.region = region
         self.output = output
+        self.retries = retries
         self.session = requests.Session()
 
         self.session.auth = HttpNtlmAuth(self.domain_user, self.password)
@@ -126,13 +127,21 @@ class STSAuth:
             logger.debug('Could not find \'default\' section in'
                          ' {0.credentialsfile!r}!'.format(self))
 
-    def get_saml_response(self, response=None):
+    def get_saml_response(self, response=None, retries=1):
+        if retries <= 0:
+            msg = ('Eager exit to avoid account lockout. Please verify your '
+                'username and password and retry.'
+            )
+            click.secho(msg, fg='red')
+            sys.exit(1)
+
         if not response:
             response = self.session.get(self.idpentryurl)
         pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
         assertion = re.search(pattern, response.text)
         # TODO: Better error handling is required for production use.
         if assertion is None:
+            logger.debug('No Assertion found in response. Attempting to log in...')
             # If there is no assertion, it is possible the user is attempting
             # to authenticate from outside the network, so we check for a login
             # form in their response.
@@ -140,7 +149,10 @@ class STSAuth:
             form_exists = re.search(form_pattern, response.text)
             if form_exists:
                 form_response = self.get_saml_response_from_login_form(response)
-                return self.get_saml_response(form_response)
+                return self.get_saml_response(
+                    response=form_response,
+                    retries=(retries-1)
+                )
             else:
                 msg = 'Response did not contain a valid SAML assertion nor a valid login form.'
                 click.secho(msg, fg='red')
@@ -156,6 +168,7 @@ class STSAuth:
         for input_tag in login_page.find_all(re.compile('(INPUT|input)')):
             name = input_tag.get('name', '')
             value = input_tag.get('value', '')
+            logger.debug('Adding value for {!r} to Login Form payload.'.format(name))
             if "user" in name.lower():
                 payload[name] = self.domain_user
             elif "email" in name.lower():
@@ -175,11 +188,13 @@ class STSAuth:
                 # i.e. action='/path/to/something' vs action='http://test.com/path/to/something'
                 scheme = parsed_action.scheme if parsed_action.scheme else parsed_idp_url.scheme
                 netloc = parsed_action.netloc if parsed_action.netloc else parsed_idp_url.netloc
-                url_parts = (parsed_idp_url.scheme, parsed_idp_url.netloc,
+                url_parts = (scheme, netloc,
                              parsed_action.path, None, parsed_action.query, None)
                 idp_auth_form_submit_url = urlunparse(url_parts)
 
         # TODO: need to check for valid response
+        # Can look for `span #errorText`
+        logger.debug('Fetching URL: {}'.format(idp_auth_form_submit_url))
         response = self.session.post(
             idp_auth_form_submit_url,
             data=payload,
