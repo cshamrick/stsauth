@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='stsauth',
-    version='0.2.0',
+    version='0.2.1',
     author='Scott Hamrick',
     author_email='scott@scotthamrick.com',
     description='CLI tool for fetching AWS tokens.',
