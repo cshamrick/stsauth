@@ -128,12 +128,13 @@ class STSAuth:
                          ' {0.credentialsfile!r}!'.format(self))
 
     def get_saml_response(self, response=None, retries=1):
-        if retries <= 0:
+        if retries < 0:
             msg = ('Eager exit to avoid account lockout. Please verify your '
                 'username and password and retry.'
             )
             click.secho(msg, fg='red')
             sys.exit(1)
+        logger.debug('Login Attempt Remaining: #{}'.format(retries))
 
         if not response:
             response = self.session.get(self.idpentryurl)
