@@ -16,9 +16,9 @@ from requests_ntlm import HttpNtlmAuth
 from bs4 import BeautifulSoup
 
 try:
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse, urlunparse
 except ImportError:
-    from urlparse import urlparse
+    from urlparse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 
@@ -150,10 +150,10 @@ class STSAuth:
 
     def get_saml_response_from_login_form(self, response):
         idp_auth_form_submit_url = response.url
-        form = BeautifulSoup(response.text, "html.parser")
+        login_page = BeautifulSoup(response.text, "html.parser")
         payload = {}
 
-        for input_tag in form.find_all(re.compile('(INPUT|input)')):
+        for input_tag in login_page.find_all(re.compile('(INPUT|input)')):
             name = input_tag.get('name', '')
             value = input_tag.get('value', '')
             if "user" in name.lower():
@@ -165,12 +165,19 @@ class STSAuth:
             else:
                 payload[name] = value
 
-        for input_tag in form.find_all(re.compile('(FORM|form)')):
-            action = input_tag.get('action')
+        for form in login_page.find_all(re.compile('(FORM|form)')):
+            action = form.get('action')
             if action:
-                parsed_url = urlparse(self.idpentryurl)
-                idp_auth_form_submit_url = ('{0.scheme}://{0.netloc}{1}'
-                                            .format(parsed_url, action))
+                parsed_action = urlparse(action)
+                parsed_idp_url = urlparse(self.idpentryurl)
+                # Fallback to the IDP Entry URL from the config file if the
+                # form action does not contain a fully defined URL.
+                # i.e. action='/path/to/something' vs action='http://test.com/path/to/something'
+                scheme = parsed_action.scheme if parsed_action.scheme else parsed_idp_url.scheme
+                netloc = parsed_action.netloc if parsed_action.netloc else parsed_idp_url.netloc
+                url_parts = (parsed_idp_url.scheme, parsed_idp_url.netloc,
+                             parsed_action.path, None, parsed_action.query, None)
+                idp_auth_form_submit_url = urlunparse(url_parts)
 
         # TODO: need to check for valid response
         response = self.session.post(
