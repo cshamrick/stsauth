@@ -129,15 +129,17 @@ class STSAuth:
 
     def get_saml_response(self, response=None, retries=1):
         if retries < 0:
-            msg = ('Eager exit to avoid account lockout. Please verify your '
+            msg = (
+                'Eager exit to avoid account lockout. Please verify your '
                 'username and password and retry.'
             )
             click.secho(msg, fg='red')
             sys.exit(1)
-        logger.debug('Login Attempt Remaining: #{}'.format(retries))
+        logger.debug('{} Login Attempt(s) Remaining...'.format(retries))
 
         if not response:
             response = self.session.get(self.idpentryurl)
+            logger.debug(response.text)
         pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
         assertion = re.search(pattern, response.text)
         # TODO: Better error handling is required for production use.
@@ -150,6 +152,7 @@ class STSAuth:
             form_exists = re.search(form_pattern, response.text)
             if form_exists:
                 form_response = self.get_saml_response_from_login_form(response)
+                logger.debug(form_response.text)
                 return self.get_saml_response(
                     response=form_response,
                     retries=(retries-1)
@@ -201,6 +204,7 @@ class STSAuth:
             data=payload,
             verify=True
         )
+        logger.debug(response.text)
         return response
 
     def fetch_aws_sts_token(self, role_arn, principal_arn, assertion, duration_seconds=3600):
