@@ -80,17 +80,15 @@ class STSAuth:
         region = self.config.get('default', 'region', fallback=self.region)
         output = self.config.get('default', 'output', fallback=self.output)
 
-        if not (url and region and output):
-            _map = {'idpentryurl': url, 'domain': domain, 'region': region, 'output': output}
-            items = [k for k, v in _map.items() if not v]
+        _map = {'idpentryurl': url, 'domain': domain, 'region': region, 'output': output}
+        items = [k for k, v in _map.items() if not v]
+        if items:
             msg = ('Config value missing for the items {}.\n'
-                   'Please add these to {} or provide them '
-                   'through CLI flags (see `stsauth --help`) and try again.'
-                   .format(items, self.credentialsfile))
-            valid = False
-
-        if not valid:
+                    'Please add these to {} or provide them '
+                    'through CLI flags (see `stsauth --help`) and try again.'
+                    .format(items, self.credentialsfile))
             click.secho(msg, fg='red')
+            valid = False
         return valid
 
     @property
