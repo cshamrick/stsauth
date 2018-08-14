@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 class STSAuth:
     def __init__(self, username, password, credentialsfile,
                  idpentryurl=None, profile=None, domain=None,
-                 region=None, output=None, force=False, retries=1):
+                 region=None, output=None, force=False):
         self.domain = domain
         self.username = username
         self.password = password
@@ -58,7 +58,6 @@ class STSAuth:
         self.profile = profile
         self.region = region
         self.output = output
-        self.retries = retries
         self.session = requests.Session()
 
         self.session.auth = HttpNtlmAuth(self.domain_user, self.password)
@@ -125,45 +124,32 @@ class STSAuth:
             logger.debug('Could not find \'default\' section in'
                          ' {0.credentialsfile!r}!'.format(self))
 
-    def get_saml_response(self, response=None, retries=1):
-        if retries < 0:
-            msg = (
-                'Eager exit to avoid account lockout. Please verify your '
-                'username and password and retry.'
-            )
-            click.secho(msg, fg='red')
-            sys.exit(1)
-        logger.debug('{} Login Attempt(s) Remaining...'.format(retries))
-
+    def get_saml_response(self, response=None):
         if not response:
+            logger.debug('No response provided. Fetching IDP Entry URL...')
             response = self.session.get(self.idpentryurl)
-            logger.debug(response.text)
-        pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
-        assertion = re.search(pattern, response.text)
-        # TODO: Better error handling is required for production use.
-        if assertion is None:
-            logger.debug('No Assertion found in response. Attempting to log in...')
+
+        assertion_pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
+        assertion = re.search(assertion_pattern, response.text)
+
+        if assertion:
+            return assertion.groups()[0]
+
+        form_pattern = re.compile('(FORM|form)')
+        form_exists = re.search(form_pattern, response.text)
+        if assertion is None and form_exists:
             # If there is no assertion, it is possible the user is attempting
             # to authenticate from outside the network, so we check for a login
             # form in their response.
-            form_pattern = re.compile('(FORM|form)')
-            form_exists = re.search(form_pattern, response.text)
-            if form_exists:
-                form_response = self.get_saml_response_from_login_form(response)
-                logger.debug(form_response.text)
-                return self.get_saml_response(
-                    response=form_response,
-                    retries=(retries-1)
-                )
-            else:
-                msg = 'Response did not contain a valid SAML assertion nor a valid login form.'
-                click.secho(msg, fg='red')
-                sys.exit(1)
+            logger.debug('No assertion found in initial response. Attempting to log in...')
+            form_response = self.get_saml_response_from_login_form(response)
+            return self.get_saml_response(response=form_response)
         else:
-            return assertion.groups()[0]
+            msg = 'Response did not contain a valid SAML assertion or a valid login form.'
+            click.secho(msg, fg='red')
+            sys.exit(1)
 
-    def get_saml_response_from_login_form(self, response):
-        idp_auth_form_submit_url = response.url
+    def generate_payload_from_login_page(self, response):
         login_page = BeautifulSoup(response.text, "html.parser")
         payload = {}
 
@@ -180,6 +166,12 @@ class STSAuth:
             else:
                 payload[name] = value
 
+        return payload
+
+    def build_idp_auth_url(self, response):
+        idp_auth_form_submit_url = response.url
+        login_page = BeautifulSoup(response.text, "html.parser")
+
         for form in login_page.find_all(re.compile('(FORM|form)')):
             action = form.get('action')
             if action:
@@ -190,20 +182,30 @@ class STSAuth:
                 # i.e. action='/path/to/something' vs action='http://test.com/path/to/something'
                 scheme = parsed_action.scheme if parsed_action.scheme else parsed_idp_url.scheme
                 netloc = parsed_action.netloc if parsed_action.netloc else parsed_idp_url.netloc
-                url_parts = (scheme, netloc,
-                             parsed_action.path, None, parsed_action.query, None)
+                url_parts = (scheme, netloc, parsed_action.path, None, parsed_action.query, None)
                 idp_auth_form_submit_url = urlunparse(url_parts)
 
-        # TODO: need to check for valid response
-        # Can look for `span #errorText`
-        logger.debug('Fetching URL: {}'.format(idp_auth_form_submit_url))
-        response = self.session.post(
+        return idp_auth_form_submit_url
+
+    def get_saml_response_from_login_form(self, response):
+        payload = self.generate_payload_from_login_page(response)
+        idp_auth_form_submit_url = self.build_idp_auth_url(response)
+
+        logger.debug('Posting login data to URL: {}'.format(idp_auth_form_submit_url))
+        login_response = self.session.post(
             idp_auth_form_submit_url,
             data=payload,
             verify=True
         )
-        logger.debug(response.text)
-        return response
+        login_response_page = BeautifulSoup(login_response.text, "html.parser")
+        login_error_message = login_response_page.find(id='errorText')
+        if login_error_message and len(login_error_message.string) > 0:
+            msg = ('Login page returned the following message. '
+                   'Please resolve this issue before continuing:')
+            click.secho(msg, fg='red')
+            click.secho(login_error_message.string, fg='red')
+            sys.exit(1)
+        return login_response
 
     def fetch_aws_sts_token(self, role_arn, principal_arn, assertion, duration_seconds=3600):
         """Use the assertion to get an AWS STS token using `assume_role_with_saml`
