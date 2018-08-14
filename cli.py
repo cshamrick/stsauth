@@ -36,14 +36,12 @@ def cli():
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
-                 credentialsfile, profile, region, output,
-                 force):
+                 credentialsfile, profile, region, output, force):
     # UNSET any proxy vars that exist in the session
     unset_proxy()
 
     sts_auth = STSAuth(username, password, credentialsfile,
-                       idpentryurl, profile, domain, region,
-                       output)
+                       idpentryurl, profile, domain, region, output)
 
     if not sts_auth.config_file_is_valid:
         sys.exit(1)
@@ -52,8 +50,8 @@ def authenticate(username, password, idpentryurl, domain,
         prompt_for_unexpired_credentials(sts_auth.profile)
 
     sts_auth.parse_config_file()
-    assertion = sts_auth.get_saml_response()
 
+    assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
     awsroles = stsauth.parse_roles_from_assertion(assertion)
     account_roles, account_lookup = stsauth.format_roles_for_display(awsroles)
