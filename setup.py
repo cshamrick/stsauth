@@ -1,8 +1,8 @@
 from setuptools import setup
 
 
-def get_requirements(env=None):
-    fn = 'requirements{}{}.txt'.format('-' if env else '', env)
+def get_requirements(env=''):
+    fn = 'requirements{}{}.txt'.format(('-' if env else ''), env)
     with open(fn) as fp:
         return [x.strip() for x in fp.read().split('\n') if not x.startswith('#')]
 
