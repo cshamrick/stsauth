@@ -1,25 +1,17 @@
 from setuptools import setup
 
+
+def get_requirements(env=None):
+    fn = 'requirements{}{}.txt'.format('-' if env else '', env)
+    with open(fn) as fp:
+        return [x.strip() for x in fp.read().split('\n') if not x.startswith('#')]
+
+
 with open('README.md', 'r') as fh:
     long_description = fh.read()
 
-install_requires = [
-    'awscli>=1.15.0,<2',
-    'boto3>=1.7.0,<2',
-    'beautifulsoup4>=4.6.0,<5',
-    'Click>=6.7,<7',
-    'click-log>=0.2.1,<0.3',
-    'configparser>=3.5.0,<4',
-    'requests>=2.18.0,<3',
-    'requests_ntlm>=1.1.0,<2',
-]
-
-tests_require = [
-    'tox',
-    'ipdb',
-    'mock',
-    'nose'
-]
+install_requires = get_requirements()
+tests_require = get_requirements('test')
 
 setup(
     name='stsauth',

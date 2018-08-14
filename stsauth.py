@@ -5,7 +5,6 @@ import base64
 import configparser
 from collections import defaultdict
 from datetime import datetime
-from dateutil.tz import tzutc
 from xml.etree import ElementTree
 import logging
 
@@ -83,9 +82,9 @@ class STSAuth:
         items = [k for k, v in _map.items() if not v]
         if items:
             msg = ('Config value missing for the items {}.\n'
-                    'Please add these to {} or provide them '
-                    'through CLI flags (see `stsauth --help`) and try again.'
-                    .format(items, self.credentialsfile))
+                   'Please add these to {} or provide them '
+                   'through CLI flags (see `stsauth --help`) and try again.'
+                   .format(items, self.credentialsfile))
             click.secho(msg, fg='red')
             valid = False
         return valid
@@ -368,7 +367,8 @@ def to_epoch(dt):
     Returns:
         seconds since epoch for dt
     """
-    return (dt - datetime(1970, 1, 1, tzinfo=tzutc())).total_seconds()
+    dt = dt.replace(tzinfo=None)
+    return (dt - datetime(1970, 1, 1)).total_seconds()
 
 
 def from_epoch(seconds):
