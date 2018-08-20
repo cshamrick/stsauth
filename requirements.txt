@@ -1,0 +1,8 @@
+awscli >=1.15.0,<2
+boto3 >=1.7.0,<2
+beautifulsoup4 >=4.6.0,<5
+Click >=6.7,<7
+click-log >=0.2.1,<0.3
+configparser >=3.5.0,<4
+requests >=2.18.0,<3
+requests_ntlm >=1.1.0,<2

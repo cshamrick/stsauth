@@ -5,7 +5,6 @@ import base64
 import configparser
 from collections import defaultdict
 from datetime import datetime
-from dateutil.tz import tzutc
 from xml.etree import ElementTree
 import logging
 
@@ -79,17 +78,15 @@ class STSAuth:
         region = self.config.get('default', 'region', fallback=self.region)
         output = self.config.get('default', 'output', fallback=self.output)
 
-        if not (url and region and output):
-            _map = {'idpentryurl': url, 'domain': domain, 'region': region, 'output': output}
-            items = [k for k, v in _map.items() if not v]
+        _map = {'idpentryurl': url, 'domain': domain, 'region': region, 'output': output}
+        items = [k for k, v in _map.items() if not v]
+        if items:
             msg = ('Config value missing for the items {}.\n'
                    'Please add these to {} or provide them '
                    'through CLI flags (see `stsauth --help`) and try again.'
                    .format(items, self.credentialsfile))
-            valid = False
-
-        if not valid:
             click.secho(msg, fg='red')
+            valid = False
         return valid
 
     @property
@@ -128,34 +125,37 @@ class STSAuth:
 
     def get_saml_response(self, response=None):
         if not response:
+            logger.debug('No response provided. Fetching IDP Entry URL...')
             response = self.session.get(self.idpentryurl)
-        pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
-        assertion = re.search(pattern, response.text)
-        # TODO: Better error handling is required for production use.
-        if assertion is None:
+
+        assertion_pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
+        assertion = re.search(assertion_pattern, response.text)
+
+        if assertion:
+            return assertion.groups()[0]
+
+        form_pattern = re.compile('(FORM|form)')
+        form_exists = re.search(form_pattern, response.text)
+        if assertion is None and form_exists:
             # If there is no assertion, it is possible the user is attempting
             # to authenticate from outside the network, so we check for a login
             # form in their response.
-            form_pattern = re.compile('(FORM|form)')
-            form_exists = re.search(form_pattern, response.text)
-            if form_exists:
-                form_response = self.get_saml_response_from_login_form(response)
-                return self.get_saml_response(form_response)
-            else:
-                msg = 'Response did not contain a valid SAML assertion nor a valid login form.'
-                click.secho(msg, fg='red')
-                sys.exit(1)
+            logger.debug('No assertion found in initial response. Attempting to log in...')
+            form_response = self.get_saml_response_from_login_form(response)
+            return self.get_saml_response(response=form_response)
         else:
-            return assertion.groups()[0]
+            msg = 'Response did not contain a valid SAML assertion or a valid login form.'
+            click.secho(msg, fg='red')
+            sys.exit(1)
 
-    def get_saml_response_from_login_form(self, response):
-        idp_auth_form_submit_url = response.url
+    def generate_payload_from_login_page(self, response):
         login_page = BeautifulSoup(response.text, "html.parser")
         payload = {}
 
         for input_tag in login_page.find_all(re.compile('(INPUT|input)')):
             name = input_tag.get('name', '')
             value = input_tag.get('value', '')
+            logger.debug('Adding value for {!r} to Login Form payload.'.format(name))
             if "user" in name.lower():
                 payload[name] = self.domain_user
             elif "email" in name.lower():
@@ -164,6 +164,12 @@ class STSAuth:
                 payload[name] = self.password
             else:
                 payload[name] = value
+
+        return payload
+
+    def build_idp_auth_url(self, response):
+        idp_auth_form_submit_url = response.url
+        login_page = BeautifulSoup(response.text, "html.parser")
 
         for form in login_page.find_all(re.compile('(FORM|form)')):
             action = form.get('action')
@@ -175,17 +181,30 @@ class STSAuth:
                 # i.e. action='/path/to/something' vs action='http://test.com/path/to/something'
                 scheme = parsed_action.scheme if parsed_action.scheme else parsed_idp_url.scheme
                 netloc = parsed_action.netloc if parsed_action.netloc else parsed_idp_url.netloc
-                url_parts = (parsed_idp_url.scheme, parsed_idp_url.netloc,
-                             parsed_action.path, None, parsed_action.query, None)
+                url_parts = (scheme, netloc, parsed_action.path, None, parsed_action.query, None)
                 idp_auth_form_submit_url = urlunparse(url_parts)
 
-        # TODO: need to check for valid response
-        response = self.session.post(
+        return idp_auth_form_submit_url
+
+    def get_saml_response_from_login_form(self, response):
+        payload = self.generate_payload_from_login_page(response)
+        idp_auth_form_submit_url = self.build_idp_auth_url(response)
+
+        logger.debug('Posting login data to URL: {}'.format(idp_auth_form_submit_url))
+        login_response = self.session.post(
             idp_auth_form_submit_url,
             data=payload,
             verify=True
         )
-        return response
+        login_response_page = BeautifulSoup(login_response.text, "html.parser")
+        login_error_message = login_response_page.find(id='errorText')
+        if login_error_message and len(login_error_message.string) > 0:
+            msg = ('Login page returned the following message. '
+                   'Please resolve this issue before continuing:')
+            click.secho(msg, fg='red')
+            click.secho(login_error_message.string, fg='red')
+            sys.exit(1)
+        return login_response
 
     def fetch_aws_sts_token(self, role_arn, principal_arn, assertion, duration_seconds=3600):
         """Use the assertion to get an AWS STS token using `assume_role_with_saml`
@@ -348,7 +367,8 @@ def to_epoch(dt):
     Returns:
         seconds since epoch for dt
     """
-    return (dt - datetime(1970, 1, 1, tzinfo=tzutc())).total_seconds()
+    dt = dt.replace(tzinfo=None)
+    return (dt - datetime(1970, 1, 1)).total_seconds()
 
 
 def from_epoch(seconds):

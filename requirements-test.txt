@@ -1,0 +1,9 @@
+tox
+ipdb
+mock
+nose
+pylint
+flake8
+pytest
+coverage
+pytest-cov
