@@ -1,9 +1,11 @@
+import os
 from setuptools import setup
 
 
 def get_requirements(env=''):
+    path = os.path.dirname(os.path.abspath(__file__))
     fn = 'requirements{}{}.txt'.format(('-' if env else ''), env)
-    with open(fn) as fp:
+    with open(os.path.join(path, fn)) as fp:
         return [x.strip() for x in fp.read().split('\n') if not x.startswith('#')]
 
 
