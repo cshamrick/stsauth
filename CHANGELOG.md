@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## v0.2.4
+- Add MANIFEST.in which is needed to include requirements file in dist.
+
 ## v0.2.3
 - Fix issue when installing stsauth in python2.7 where requirements file could not be found.
 
