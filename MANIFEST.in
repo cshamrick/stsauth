@@ -1,0 +1,6 @@
+include *.md
+include *.py
+include *.txt
+include LICENSE
+include tox.ini
+recursive-include tests *.py
