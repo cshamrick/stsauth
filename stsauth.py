@@ -367,8 +367,7 @@ def to_epoch(dt):
     Returns:
         seconds since epoch for dt
     """
-    dt = dt.replace(tzinfo=None)
-    return (dt - datetime(1970, 1, 1)).total_seconds()
+    return dt.strftime('%s')
 
 
 def from_epoch(seconds):

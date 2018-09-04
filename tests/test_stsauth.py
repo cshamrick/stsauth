@@ -6,6 +6,9 @@ except ImportError:
     from mock import MagicMock
 
 from stsauth import STSAuth
+from stsauth import from_epoch, to_epoch
+
+from datetime import datetime, timedelta
 
 
 class TestSTSAuth(TestCase):
@@ -26,4 +29,13 @@ class TestSTSAuth(TestCase):
 
     def test_sts_auth(self):
         # ipdb.set_trace()
+        print("test print")
         self.assertEquals(1, 1)
+
+
+class TestToFromEpoch(TestCase):
+    def test_to_from_epoch(self):
+        time_delta = timedelta(seconds=1)
+        datetime_now = datetime.now()
+        util_func_now = from_epoch(to_epoch(datetime.now()))
+        self.assertTrue(abs((util_func_now - datetime_now)) < time_delta)
