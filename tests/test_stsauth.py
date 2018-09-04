@@ -29,7 +29,6 @@ class TestSTSAuth(TestCase):
 
     def test_sts_auth(self):
         # ipdb.set_trace()
-        print("test print")
         self.assertEquals(1, 1)
 
 
