@@ -120,6 +120,13 @@ saml                              2018-06-25 16:32:20
 
 ```
 
+## Troubleshooting
+
+### An error occurs when authenticating
+> An error occurred (AccessDenied) when calling the AssumeRoleWithSAML operation: Access denied
+
+You likely have lost permission. Please try to sign in via AWS Console.
+
 ## Credits
 This project is based largely on [Enabling Federation to AWS Using Windows Active Directory, ADFS, and SAML 2.0](https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/)
 
