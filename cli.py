@@ -34,15 +34,27 @@ def cli():
 @click.option('--profile', '-l', help='Name of config profile.', default=None)
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--okta-org', '-k', default=None, help='The Okta organization to use. ex: my-organization')
+@click.option('--okta-shared-secret', '-s', default=None, help='Okta Shared Secret for TOTP Authentication.')
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
-                 credentialsfile, profile, okta_org, region, output, force):
+                 credentialsfile, profile, okta_org,
+                 okta_shared_secret, region, output, force):
     # UNSET any proxy vars that exist in the session
     unset_proxy()
 
-    sts_auth = STSAuth(username, password, credentialsfile,
-                       idpentryurl, profile, okta_org, domain, region, output)
+    sts_auth = STSAuth(
+        username=username,
+        password=password,
+        credentialsfile=credentialsfile,
+        idpentryurl=idpentryurl,
+        profile=profile,
+        okta_org=okta_org,
+        okta_shared_secret=okta_shared_secret,
+        domain=domain,
+        region=region,
+        output=output
+    )
 
     if not sts_auth.config_file_is_valid:
         sys.exit(1)

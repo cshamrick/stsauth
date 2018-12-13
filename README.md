@@ -40,9 +40,10 @@ $ pip install stsauth --upgrade
     region = us-east-1
     idpentryurl = https://<fqdn>/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices
     domain = MYADDOMAIN
-    okta_org = 'my-organization'
-    aws_access_key_id = ''
-    aws_secret_access_key = ''
+    okta_org = my-organization
+    okta_shared_secret = 16CHARLONGSTRING
+    aws_access_key_id = awsaccesskeyidstringexample
+    aws_secret_access_key = awssecretaccesskeystringexample
     ```
 
 ## Usage
@@ -127,6 +128,20 @@ saml                              2018-06-25 16:32:20
 000000000002-ADFS-Account-One     2018-06-27 11:23:23
 000000000002-ADFS-Account-Two     2018-06-27 11:28:22
 ```
+
+## Fetching your Okta Secret Key
+
+1. Login to your Okta portal (ex: `https://(your-organization).okta.com`).
+2. In the top-right corner, click your name, then `Settings`.
+3. Under `Extra Verification` click either "Setup" or "Reset" next to `Okta Verify Mobile App`.
+4. Choose your device type, click `Next`.
+5. **IMPORTANT:** Before scanning:
+    1. Click `Problems scanning bardcode?`
+    2. Choose `Setup manually without Push Authentication`
+    3. Copy the `Secret Key` under step 3.
+6. Click `Back`
+7. Scan the barcode with your phone.
+8. Click `Done`
 
 ## Credits
 
