@@ -40,6 +40,7 @@ $ pip install stsauth --upgrade
     region = us-east-1
     idpentryurl = https://<fqdn>/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices
     domain = MYADDOMAIN
+    okta_org = 'my-organization'
     aws_access_key_id = ''
     aws_secret_access_key = ''
     ```
@@ -72,6 +73,7 @@ Options:
   -c, --credentialsfile TEXT      Path to AWS credentials file.
   -l, --profile TEXT              Name of config profile.
   -r, --region TEXT               The AWS region to use. ex: us-east-1
+  -k, --okta-org TEXT             Name of Okta organization.
   -o, --output [json|text|table]
   -f, --force                     Auto-accept confirmation prompts.
   --help                          Show this message and exit.

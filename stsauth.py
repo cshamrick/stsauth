@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import time
 import base64
 import configparser
 from collections import defaultdict
@@ -22,33 +23,24 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-##########################################################################
-# Variables
-
-# REGION: The default AWS REGION that this script will connect to for all API calls
-# region = 'us-east-1'
-
-# output format: The AWS CLI output format that will be configured in the
-# saml profile (affects subsequent CLI calls)
-# output = 'json'
-
-# awscredentialsfile: The file where this script will store credentials under the saml profile
-# awscredentialsfile = '~/.aws/credentials'
-
-# SSL certificate verification: Whether or not strict certificate
-# verification is done, False should only be used for dev/test
-# sslverification = True
-
-# idpentryurl: The initial url that starts the authentication process.
-# idpentryurl = ('https://<fdqn>/adfs/ls/'
-#                'idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices')
-
-##########################################################################
-
 class STSAuth:
+    """Initializes an STS Authenticator.
+
+    :param username: Username to authenticate with (required).
+    :param password: Password to authenticate with (required).
+    :param credentialsfile: A path to an AWS Credentials file (required).
+        See https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html
+        for more details.
+    :param idpentryurl: URL to the IDP Entrypoint.
+    :param profile: Name of an AWS Profile to automatically fetch credentials for.
+    :param okta_org: Name of the Okta organization, ex: `my-company`.
+    :param domain: Domain which your username resides if required.
+    :param region: Region for AWS to authenticate in.
+    :param output: Output format, one of: `json`, `text`, `table`.
+    """
     def __init__(self, username, password, credentialsfile,
-                 idpentryurl=None, profile=None, domain=None,
-                 region=None, output=None, force=False):
+                 idpentryurl=None, profile=None, okta_org=None,
+                 domain=None, region=None, output=None, force=False):
         self.domain = domain
         self.username = username
         self.password = password
@@ -57,8 +49,10 @@ class STSAuth:
         self.profile = profile
         self.region = region
         self.output = output
+        self.okta_org = okta_org
         self.session = requests.Session()
 
+        self.session.headers.update({'content-type': 'application/json'})
         self.session.auth = HttpNtlmAuth(self.domain_user, self.password)
         self.config = configparser.RawConfigParser()
         self.config.read(self.credentialsfile)
@@ -119,6 +113,9 @@ class STSAuth:
             if not self.domain:
                 logger.debug(msg.format(self, 'domain'))
                 self.domain = default.get('domain')
+            if not self.okta_org:
+                logger.debug(msg.format(self, 'okta_org'))
+                self.okta_org = default.get('okta_org')
         else:
             logger.debug('Could not find \'default\' section in'
                          ' {0.credentialsfile!r}!'.format(self))
@@ -127,26 +124,131 @@ class STSAuth:
         if not response:
             logger.debug('No response provided. Fetching IDP Entry URL...')
             response = self.session.get(self.idpentryurl)
-
+        response.soup = BeautifulSoup(response.text, "lxml")
         assertion_pattern = re.compile(r'name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>')
         assertion = re.search(assertion_pattern, response.text)
 
         if assertion:
+            # If there is already an assertion in the response, we can simply
+            # return that and continue, otherwise, we will have to dance
+            # through authentication.
             return assertion.groups()[0]
 
-        form_pattern = re.compile('(FORM|form)')
-        form_exists = re.search(form_pattern, response.text)
-        if assertion is None and form_exists:
+        login_form = response.soup.find(id='loginForm')
+        okta_login = response.soup.find(id='okta-login-container')
+
+        if okta_login:
+            # If there is no assertion, and we find an Okta portal on the page,
+            # we have to pass through the Okta portal regardless of whether MFA
+            # will be required or not.
+            if not self.okta_org:
+                msg = ('Okta MFA required but no Okta Organization set. '
+                'Please either set in the config or use `--okta-org`')
+                click.secho(msg, fg='red')
+                sys.exit(1)
+
+            logger.debug('No SAML assertion found in response. Attempting to begin MFA...')
+            verification_status = self.get_verification_status_from_response(response)
+            logger.debug('Current Verification Status: {}.'.format(verification_status))
+            if verification_status == 'success':
+                logger.debug('Okta portal already authenticated, passing through...')
+                # If the Okta portal status is already 'success', we can just
+                # pass through the Okta portal, otherwise, we will have to do MFA.
+                okta_form_submit_response = self.submit_adapter_glue_form(response)
+                return self.get_saml_response(okta_form_submit_response)
+            elif verification_status == 'mfa_required':
+                # If the Okta portal is in 'mfa_required', we need to begin the
+                # MFA process. Currently only push is supported.
+                state_token = self.get_state_token_from_response(response)
+                okta_push_factor_id = self.fetch_push_factor_id(state_token)
+                mfa_verified = self.poll_for_okta_push_verification(state_token, okta_push_factor_id)
+
+                if mfa_verified:
+                    okta_response = self.submit_adapter_glue_form(response)
+                    return self.get_saml_response(response=okta_response)
+            else:
+                click.secho('Okta verification failed. Exiting...', fg='red')
+                sys.exit(1)
+
+        if login_form:
             # If there is no assertion, it is possible the user is attempting
             # to authenticate from outside the network, so we check for a login
             # form in their response.
-            logger.debug('No assertion found in initial response. Attempting to log in...')
-            form_response = self.get_saml_response_from_login_form(response)
+            logger.debug('No SAML assertion found in response. Attempting to log in...')
+            form_response = self.authenticate_to_adfs_portal(response)
             return self.get_saml_response(response=form_response)
+
         else:
-            msg = 'Response did not contain a valid SAML assertion or a valid login form.'
+            msg = 'Response did not contain a valid SAML assertion, a valid login form, or request MFA.'
             click.secho(msg, fg='red')
             sys.exit(1)
+
+    def get_verification_status_from_response(self, response):
+        status_search = re.search(re.compile(r"var status = '(.*?)';"), response.text)
+        if status_search:
+            if len(status_search.groups()) == 1:
+                return status_search.groups()[0]
+        click.secho('No Verification Status found in response. Exiting...', fg='red')
+        sys.exit(1)
+
+    def get_state_token_from_response(self, response):
+        state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response.text)
+        if state_token_search:
+            if len(state_token_search.groups()) == 1:
+                state_token = state_token_search.groups()[0]
+                logger.debug('Found state_token: {}'.format(state_token))
+                return state_token
+        click.secho('No State Token found in response. Exiting...', fg='red')
+        sys.exit(1)
+
+    def submit_adapter_glue_form(self, response):
+        response.soup = BeautifulSoup(response.content, 'lxml')
+        adapter_glue_form = response.soup.find(id='adapterGlue')
+        referer = response.url
+        self.session.headers.update({'Referer': referer})
+        selectors = ",".join("{}[name]".format(i) for i in ("input", "button", "textarea", "select"))
+        data = [(tag.get('name'), tag.get('value')) for tag in adapter_glue_form.select(selectors)]
+        logger.debug('Posting data to url: {}\n{}'.format(referer, data))
+        return self.session.post(referer, data=data)
+
+    def fetch_push_factor_id(self, state_token):
+        okta_auth_url = 'https://{}.okta.com/api/v1/authn'.format(self.okta_org)
+        okta_transaction_state = self.session.post(
+            okta_auth_url,
+            json={'stateToken': state_token}
+        )
+        okta_factors = okta_transaction_state.json().get('_embedded', {}).get('factors', {})
+        okta_push_factor = [factor.get('id', '') for factor in okta_factors if factor.get('factorType') == 'push']
+        if len(okta_push_factor) == 1:
+            okta_push_factor_id = okta_push_factor[0]
+            return okta_push_factor_id
+        else:
+            click.secho('Invalid Push Factors returned. Exiting...', fg='red')
+            sys.exit(1)
+
+    def poll_for_okta_push_verification(self, state_token, push_factor_id, max_retries=10, poll_delay=10):
+        status = 'MFA_CHALLENGE'
+        factor_result = 'WAITING'
+        tries = 0
+        verify_data = {'stateToken': state_token}
+        factor_verify_url = 'https://{}.okta.com/api/v1/authn/factors/{}/verify'.format(self.okta_org, push_factor_id)
+        while (status == 'MFA_CHALLENGE' and tries < max_retries):
+            verify_response = requests.post(factor_verify_url, json=verify_data)
+            verify_response_json = verify_response.json()
+            logger.debug('Okta Verification Response:\n{}'.format(verify_response_json))
+            factor_result = verify_response_json.get('factorResult')
+            if factor_result == 'REJECTED':
+                click.secho('Okta push notification was rejected! Exiting...', fg='red')
+                sys.exit(1)
+            status = verify_response_json.get('status', 'MFA_CHALLENGE')
+            tries += 1
+            click.secho('({}/{}) Waiting for Okta push notification...'.format(tries, max_retries), fg='green')
+            time.sleep(poll_delay)
+
+        if status != 'SUCCESS':
+            return False
+
+        return True
 
     def generate_payload_from_login_page(self, response):
         login_page = BeautifulSoup(response.text, "html.parser")
@@ -186,7 +288,7 @@ class STSAuth:
 
         return idp_auth_form_submit_url
 
-    def get_saml_response_from_login_form(self, response):
+    def authenticate_to_adfs_portal(self, response):
         payload = self.generate_payload_from_login_page(response)
         idp_auth_form_submit_url = self.build_idp_auth_url(response)
 
