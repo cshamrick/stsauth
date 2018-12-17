@@ -34,7 +34,15 @@ def cli():
 @click.option('--profile', '-l', help='Name of config profile.', default=None)
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--okta-org', '-k', default=None, help='The Okta organization to use. ex: my-organization')
-@click.option('--okta-shared-secret', '-s', default=None, help='Okta Shared Secret for TOTP Authentication.')
+@click.option('--okta-shared-secret', '-s', default=None,
+    help=(
+        'Okta Shared Secret for TOTP Authentication. '
+        '\nWARNING! Please use push notifications if at all possible. '
+        'Unless you are aware of what you are doing, this method could '
+        'potentially expose your Shared Secret. '
+        'Proceed with caution and use a tool like `pass` to securely store your secrets.'
+    )
+)
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
