@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.0
+
+- Add support for authenticating to Okta through Push notifications and TOTP
+
 ## v0.2.5
 
 - Loosen dependency version constraints.
