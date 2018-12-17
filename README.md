@@ -139,6 +139,12 @@ saml                              2018-06-25 16:32:20
 ## Warning
 It is **strongly** recommended to use Okta Push Notifications for MFA if at all possible. Storing your Shared Secret or passing it in through the command line comes with the risk of exposing the Shared Secret to unintended persons. If compromised, the security of MFA is lost. **Please proceed with caution and an understanding of the risks associated. *If you believe your Shared Secret has been compromised, please revoke it immediately.***
 
+## Troubleshooting
+
+### An error occurs when authenticating
+> An error occurred (AccessDenied) when calling the AssumeRoleWithSAML operation: Access denied
+
+You likely have lost permission. Please try to sign in via AWS Console.
 
 ## Credits
 
