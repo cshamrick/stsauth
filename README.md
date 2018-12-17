@@ -27,7 +27,6 @@ $ pip install stsauth==0.1.0
 
 ```shell
 $ pip install stsauth --upgrade
-...
 ```
 
 ## Configuration
@@ -40,8 +39,10 @@ $ pip install stsauth --upgrade
     region = us-east-1
     idpentryurl = https://<fqdn>/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices
     domain = MYADDOMAIN
-    aws_access_key_id = ''
-    aws_secret_access_key = ''
+    okta_org = my-organization
+    okta_shared_secret = 16CHARLONGSTRING
+    aws_access_key_id = awsaccesskeyidstringexample
+    aws_secret_access_key = awssecretaccesskeystringexample
     ```
 
 ## Usage
@@ -72,6 +73,15 @@ Options:
   -c, --credentialsfile TEXT      Path to AWS credentials file.
   -l, --profile TEXT              Name of config profile.
   -r, --region TEXT               The AWS region to use. ex: us-east-1
+  -k, --okta-org TEXT             The Okta organization to use. ex: my-
+                                  organization
+  -s, --okta-shared-secret TEXT   Okta Shared Secret for TOTP Authentication.
+                                  WARNING! Please use push notifications if at
+                                  all possible. Unless you are aware of what
+                                  you are doing, this method could potentially
+                                  expose your Shared Secret. Proceed with
+                                  caution and use a tool like `pass` to
+                                  securely store your secrets.
   -o, --output [json|text|table]
   -f, --force                     Auto-accept confirmation prompts.
   --help                          Show this message and exit.
@@ -125,6 +135,10 @@ saml                              2018-06-25 16:32:20
 000000000002-ADFS-Account-One     2018-06-27 11:23:23
 000000000002-ADFS-Account-Two     2018-06-27 11:28:22
 ```
+
+## Warning
+It is **strongly** recommended to use Okta Push Notifications for MFA if at all possible. Storing your Shared Secret or passing it in through the command line comes with the risk of exposing the Shared Secret to unintended persons. If compromised, the security of MFA is lost. **Please proceed with caution and an understanding of the risks associated. *If you believe your Shared Secret has been compromised, please revoke it immediately.***
+
 
 ## Credits
 

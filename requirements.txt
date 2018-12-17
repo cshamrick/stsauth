@@ -6,3 +6,5 @@ click-log ==0.3.2
 configparser <4
 requests <3
 requests_ntlm <2
+lxml <5
+pyotp <3
