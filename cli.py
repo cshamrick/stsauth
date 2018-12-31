@@ -122,7 +122,8 @@ def authenticate(username, password, idpentryurl, domain,
 @cli.command()
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
-def profiles(credentialsfile):
+@click.argument('profile', nargs=1, required=False)
+def profiles(credentialsfile, profile):
     """Lists the profile details from the credentialsfile.
 
     Prints a list to the cli containing a tabular list of Profile and Expiry:
@@ -134,6 +135,13 @@ def profiles(credentialsfile):
     Args:
         credentialsfile: the file containing the profile details.
     """
+    if profile == None:
+        print_profiles(credentialsfile)
+    else:
+        print_profile(credentialsfile, profile)
+
+
+def print_profiles(credentialsfile):
     credentialsfile = os.path.expanduser(credentialsfile)
     config = configparser.RawConfigParser()
     config.read(credentialsfile)
@@ -164,6 +172,20 @@ def profiles(credentialsfile):
             item_1_len=expiry_max_len)
         )
 
+def print_profile(credentialsfile, profile):
+    credentialsfile = os.path.expanduser(credentialsfile)
+    config = configparser.RawConfigParser()
+    config.read(credentialsfile)
+    if not config.has_section(profile):
+        click.secho("Section '{}' does not exist in {}!".format(profile, credentialsfile), fg='red')
+        sys.exit(1)
+
+    click.secho('[{}]'.format(profile), fg='green')
+    for k, v in config.items(profile):
+        click.secho('{} = '.format(k), fg='blue', nl=False)
+        if k == 'aws_credentials_expiry':
+            v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
+        click.secho(v, fg='green')
 
 def prompt_for_role(account_roles, account_lookup):
     """Prompts the user to select a role based off what roles are available to them.
