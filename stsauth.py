@@ -270,7 +270,8 @@ class STSAuth:
         )
         return False
 
-    def poll_for_okta_push_verification(self, state_token, factor_details, max_retries=10, poll_delay=10):
+    def poll_for_okta_push_verification(self, state_token, factor_details,
+                                        notify_count=5, poll_count=10):
         status = 'MFA_CHALLENGE'
         tries = 0
         verify_data = {'stateToken': state_token}
@@ -278,30 +279,25 @@ class STSAuth:
         if verify_url == None:
             click.secho('No Okta verification URL present in response. Exiting...', fg='red')
             sys.exit(1)
-        while (status == 'MFA_CHALLENGE' and tries < max_retries):
+        while (status == 'MFA_CHALLENGE' and tries < notify_count):
+            msg = '({}/{}) Waiting for Okta push notification to be accepted...'
+            click.secho(msg.format(tries+1, notify_count), fg='green')
+            for _ in range(poll_count):
+                verify_response = requests.post(verify_url, json=verify_data)
+                if verify_response.ok:
+                    verify_response_json = verify_response.json()
+                    logger.debug('Okta Verification Response:\n{}'.format(verify_response_json))
+                    status = verify_response_json.get('status', 'MFA_CHALLENGE')
 
-            verify_response = requests.post(verify_url, json=verify_data)
-            if verify_response.ok:
-                verify_response_json = verify_response.json()
-                logger.debug('Okta Verification Response:\n{}'.format(verify_response_json))
-                status = verify_response_json.get('status', 'MFA_CHALLENGE')
+                    if verify_response_json.get('factorResult') == 'REJECTED':
+                        click.secho('Okta push notification was rejected! Exiting...', fg='red')
+                        sys.exit(1)
+                    if status == 'SUCCESS':
+                        break
+                    time.sleep(1)
+            tries += 1
 
-                if verify_response_json.get('factorResult') == 'REJECTED':
-                    click.secho('Okta push notification was rejected! Exiting...', fg='red')
-                    sys.exit(1)
-                if status == 'SUCCESS':
-                    break
-                tries += 1
-                click.secho(
-                    '({}/{}) Waiting for Okta push notification to be accepted...'.format(tries, max_retries),
-                    fg='green'
-                )
-                time.sleep(poll_delay)
-
-        if status != 'SUCCESS':
-            return False
-
-        return True
+        return status == 'SUCCESS'
 
     def generate_payload_from_login_page(self, response):
         login_page = BeautifulSoup(response.text, "html.parser")
