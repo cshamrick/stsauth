@@ -39,6 +39,7 @@ class STSAuth:
     :param region: Region for AWS to authenticate in.
     :param output: Output format, one of: `json`, `text`, `table`.
     """
+
     def __init__(self, username, password, credentialsfile,
                  idpentryurl=None, profile=None, okta_org=None,
                  okta_shared_secret=None, domain=None, region=None,
@@ -149,7 +150,7 @@ class STSAuth:
             # will be required or not.
             if not self.okta_org:
                 msg = ('Okta MFA required but no Okta Organization set. '
-                'Please either set in the config or use `--okta-org`')
+                       'Please either set in the config or use `--okta-org`')
                 click.secho(msg, fg='red')
                 sys.exit(1)
 
@@ -424,24 +425,21 @@ def format_roles_for_display(attrs):
 
     Returns:
         List of dictionaries used to display to the user
-        Dictionary mapping input values to ARNs
     """
-    account_roles = defaultdict(list)
-    account_lookup = {}
+    accts = []
     for attr in attrs:
         _attr = attr.split(',')
         role = _attr[0] if ':role/' in _attr[0] else _attr[1]
         acct_id = get_account_id_from_role(role)
         acct_name = role.split('/')[1]
         item = {'label': acct_name, 'attr': attr, 'id': acct_id}
-        account_roles[acct_id].append(item)
-    i = 0
-    for _, roles in account_roles.items():
-        for role in roles:
-            role['key'] = i
-            account_lookup[i] = role['attr']
-            i += 1
-    return account_roles, account_lookup
+        accts.append(item)
+    sorted_acct_roles = [k for k in sorted(accts, key=lambda k: k['id'])]
+    account_roles = defaultdict(list)
+    for i, v in enumerate(sorted_acct_roles):
+        v['num'] = i
+        account_roles[v['id']].append(v)
+    return account_roles
 
 
 def parse_roles_from_assertion(xml_body):
