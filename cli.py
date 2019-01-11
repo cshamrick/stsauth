@@ -35,14 +35,14 @@ def cli():
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--okta-org', '-k', default=None, help='The Okta organization to use. ex: my-organization')
 @click.option('--okta-shared-secret', '-s', default=None,
-    help=(
-        'Okta Shared Secret for TOTP Authentication. '
-        '\nWARNING! Please use push notifications if at all possible. '
-        'Unless you are aware of what you are doing, this method could '
-        'potentially expose your Shared Secret. '
-        'Proceed with caution and use a tool like `pass` to securely store your secrets.'
-    )
-)
+              help=(
+                  'Okta Shared Secret for TOTP Authentication. '
+                  '\nWARNING! Please use push notifications if at all possible. '
+                  'Unless you are aware of what you are doing, this method could '
+                  'potentially expose your Shared Secret. '
+                  'Proceed with caution and use a tool like `pass` to securely store your secrets.'
+              )
+              )
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
@@ -75,14 +75,14 @@ def authenticate(username, password, idpentryurl, domain,
     assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
     awsroles = stsauth.parse_roles_from_assertion(assertion)
-    account_roles, account_lookup = stsauth.format_roles_for_display(awsroles)
-
+    account_roles = stsauth.format_roles_for_display(awsroles)
+    print(account_roles)
     if profile:
         role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
-    elif len(account_lookup) > 1:
-        role_arn, principal_arn = prompt_for_role(account_roles, account_lookup)
+    elif len(account_roles) > 1:
+        role_arn, principal_arn = prompt_for_role(account_roles)
     else:
-        role_arn, principal_arn = account_lookup.get(0).split(',')
+        role_arn, principal_arn = account_roles[0].get('attr').split(',')
 
     # Generate a safe-name for the profile based on acct no. and role
     role_for_section = parse_role_for_profile(role_arn)
@@ -164,13 +164,14 @@ def print_profiles(credentialsfile):
         item_1_len=expiry_max_len)
     )
     print('-' * profile_max_len + ' ' + '-' * expiry_max_len)
-    for profile in zip(profiles, expiry):
+    for profile in sorted(zip(profiles, expiry)):
         print(row_format.format(
             item_0=profile[0],
             item_1=profile[1],
             item_0_len=profile_max_len,
             item_1_len=expiry_max_len)
         )
+
 
 def print_profile(credentialsfile, profile):
     credentialsfile = os.path.expanduser(credentialsfile)
@@ -187,7 +188,8 @@ def print_profile(credentialsfile, profile):
             v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
         click.secho(v, fg='green')
 
-def prompt_for_role(account_roles, account_lookup):
+
+def prompt_for_role(account_roles):
     """Prompts the user to select a role based off what roles are available to them.
 
     Provides a prompt listing out accounts available to the user and does some basic
@@ -195,7 +197,6 @@ def prompt_for_role(account_roles, account_lookup):
 
     Args:
         account_roles: list of account and role details
-        account_lookup: dictionary mapping selction values to ARNs.
 
     Returns:
         Set containing the Role ARN  and Principal ARN
@@ -204,26 +205,26 @@ def prompt_for_role(account_roles, account_lookup):
     for acct_id, roles in account_roles.items():
         click.secho('Account {}:'.format(acct_id), fg='blue')
         for role in roles:
-            click.secho('[{key}]: {label}'.format(**role))
+            click.secho('[{i}]: {label}'.format(i=role['num'], **role))
         click.secho('')
     click.secho('Selection: ', nl=False, fg='green')
     selected_role_index = input()
 
     # Basic sanity check of input
-    if not role_selection_is_valid(selected_role_index, account_lookup):
-        return prompt_for_role(account_roles, account_lookup)
+    if not role_selection_is_valid(selected_role_index, account_roles):
+        return prompt_for_role(account_roles)
 
-    role_arn, principal_arn = account_lookup.get(int(selected_role_index)).split(',')
+    role_arn, principal_arn = account_roles[int(selected_role_index)].get('attr').split(',')
 
     return role_arn, principal_arn
 
 
-def role_selection_is_valid(selection, account_lookup):
+def role_selection_is_valid(selection, account_roles):
     """Checks that the user input is a valid selection
 
     Args:
         selection: Value the user entered.
-        account_lookup: List of valid choices to check against.
+        account_roles: List of valid roles to check against.
 
     Returns:
         Boolean reflecting the validity of given choice.
@@ -235,7 +236,7 @@ def role_selection_is_valid(selection, account_lookup):
         click.secho(err_msg, fg='red')
         return False
 
-    if int(selection) not in range(len(account_lookup)):
+    if int(selection) not in range(len(account_roles)):
         click.secho(err_msg, fg='red')
         return False
 
