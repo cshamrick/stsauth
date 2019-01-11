@@ -76,7 +76,7 @@ def authenticate(username, password, idpentryurl, domain,
     # Parse the returned assertion and extract the authorized roles
     awsroles = stsauth.parse_roles_from_assertion(assertion)
     account_roles = stsauth.format_roles_for_display(awsroles)
-    print(account_roles)
+
     if profile:
         role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
     elif len(account_roles) > 1:
@@ -209,12 +209,16 @@ def prompt_for_role(account_roles):
         click.secho('')
     click.secho('Selection: ', nl=False, fg='green')
     selected_role_index = input()
+    selected_role_index = int(selected_role_index)
+    flat_roles = [i for sl in account_roles.values() for i in sl]
 
     # Basic sanity check of input
-    if not role_selection_is_valid(selected_role_index, account_roles):
+    if not role_selection_is_valid(selected_role_index, flat_roles):
         return prompt_for_role(account_roles)
 
-    role_arn, principal_arn = account_roles[int(selected_role_index)].get('attr').split(',')
+    attr = next((v['attr'] for v in flat_roles if v['num'] == selected_role_index), None)
+
+    role_arn, principal_arn = attr.split(',')
 
     return role_arn, principal_arn
 
@@ -231,12 +235,12 @@ def role_selection_is_valid(selection, account_roles):
     """
     err_msg = 'You selected an invalid role index, please try again'
     try:
-        int(selection)
+        selection
     except ValueError:
         click.secho(err_msg, fg='red')
         return False
 
-    if int(selection) not in range(len(account_roles)):
+    if selection not in range(len(account_roles)):
         click.secho(err_msg, fg='red')
         return False
 
