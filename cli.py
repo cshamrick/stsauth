@@ -207,7 +207,7 @@ def prompt_for_role(account_roles):
     for acct_id, roles in account_roles.items():
         click.secho('Account {}:'.format(acct_id), fg='blue')
         for role in roles:
-            click.secho('[{i}]: {label}'.format(i=role['num'], **role))
+            click.secho('[{num}]: {label}'.format(**role))
         click.secho('')
     click.secho('Selection: ', nl=False, fg='green')
     selected_role_index = input()
