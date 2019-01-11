@@ -110,7 +110,9 @@ def authenticate(username, password, idpentryurl, domain,
         'Expiration Date: {expiry}\n'
         '------------------------------------------------------------\n'
         'To use this credential, call the AWS CLI with the --profile option:\n'
-        '(e.g. aws --profile {role} ec2 describe-instances).\n'
+        'e.g. aws --profile {role} ec2 describe-instances\n'
+        'Or provided as an environment variable:\n'
+        'export AWS_PROFILE={role}\n'
         '--------------------------------------------------------------\n'
         .format(config_file=sts_auth.credentialsfile,
                 expiry=token.get('Credentials', {}).get('Expiration', ''),
