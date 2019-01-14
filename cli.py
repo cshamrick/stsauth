@@ -156,11 +156,15 @@ def print_profiles(credentialsfile):
 
     for profile in profiles:
         profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-        profile_expiry_string = stsauth.from_epoch(profile_expiry) if profile_expiry else 'No Expiry Set'
-        expiry.append(str(profile_expiry_string))
-        is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
-        status_string = 'Active' if is_active else 'Expired'
-        statuses.append(str(status_string))
+        profile_expiry_string = 'No Expiry Set'
+        is_active = True
+
+        if profile_expiry:
+            profile_expiry_string = str(stsauth.from_epoch(profile_expiry))
+            is_active = stsauth.from_epoch(profile_expiry) > datetime.now()
+
+        expiry.append(profile_expiry_string)
+        statuses.append('Active' if is_active else 'Expired')
 
     profile_max_len = len(max(profiles, key=len))
     expiry_max_len = len(max(expiry, key=len))
@@ -174,7 +178,11 @@ def print_profiles(credentialsfile):
         item_1_len=expiry_max_len,
         item_2_len=statuses_max_len)
     )
-    print('-' * profile_max_len + ' ' + '-' * expiry_max_len + ' ' + '-' * statuses_max_len)
+    print('{} {} {}'.format(
+        ('-' * profile_max_len),
+        ('-' * expiry_max_len),
+        ('-' * statuses_max_len))
+    )
     for profile in sorted(zip(profiles, expiry, statuses)):
         print(row_format.format(
             item_0=profile[0],
@@ -196,14 +204,14 @@ def print_profile(credentialsfile, profile):
 
     click.secho('[{}]'.format(profile), fg='green')
     for k, v in config.items(profile):
-        click.secho('{} = '.format(k), fg='blue', nl=False)
+        click.secho('{}='.format(k), fg='blue', nl=False)
         if k == 'aws_credentials_expiry':
             v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
         click.secho(v, fg='green')
 
     profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
     is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
-    click.secho('status = ', fg='blue', nl=False)
+    click.secho('status=', fg='blue', nl=False)
     if is_active:
         click.secho('active', fg='green')
     else:
