@@ -5,6 +5,8 @@ import re
 import sys
 import configparser
 
+from datetime import datetime
+
 import click
 import click_log
 
@@ -125,7 +127,8 @@ def authenticate(username, password, idpentryurl, domain,
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
 @click.argument('profile', nargs=1, required=False)
-def profiles(credentialsfile, profile):
+@click.option('--status', '-s', is_flag=True, help='Show active/expired status of profiles instead.')
+def profiles(credentialsfile, profile, status):
     """Lists the profile details from the credentialsfile.
 
     Prints a list to the cli containing a tabular list of Profile and Expiry:
@@ -138,23 +141,29 @@ def profiles(credentialsfile, profile):
         credentialsfile: the file containing the profile details.
     """
     if profile == None:
-        print_profiles(credentialsfile)
+        print_profiles(credentialsfile, status)
     else:
-        print_profile(credentialsfile, profile)
+        print_profile(credentialsfile, profile, status)
 
 
-def print_profiles(credentialsfile):
+def print_profiles(credentialsfile, status):
     credentialsfile = os.path.expanduser(credentialsfile)
     config = configparser.RawConfigParser()
     config.read(credentialsfile)
     profiles = config.sections()
-    headers = ['Profile', 'Expire Date']
+    expiry_header = 'Status' if status else 'Expire Date'
+    headers = ['Profile', expiry_header]
     expiry = []
 
     for profile in profiles:
         profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-        profile_expiry = stsauth.from_epoch(profile_expiry) if profile_expiry else 'No Expiry Set'
-        expiry.append(str(profile_expiry))
+        if not status:
+            profile_expiry = stsauth.from_epoch(profile_expiry) if profile_expiry else 'No Expiry Set'
+            expiry.append(str(profile_expiry))
+        else:
+            is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+            status_string = 'Active' if is_active else 'Expired'
+            expiry.append(str(status_string))
 
     profile_max_len = len(max(profiles, key=len))
     expiry_max_len = len(max(expiry, key=len))
@@ -175,20 +184,29 @@ def print_profiles(credentialsfile):
         )
 
 
-def print_profile(credentialsfile, profile):
+def print_profile(credentialsfile, profile, status):
     credentialsfile = os.path.expanduser(credentialsfile)
     config = configparser.RawConfigParser()
     config.read(credentialsfile)
-    if not config.has_section(profile):
-        click.secho("Section '{}' does not exist in {}!".format(profile, credentialsfile), fg='red')
-        sys.exit(1)
 
-    click.secho('[{}]'.format(profile), fg='green')
-    for k, v in config.items(profile):
-        click.secho('{} = '.format(k), fg='blue', nl=False)
-        if k == 'aws_credentials_expiry':
-            v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
-        click.secho(v, fg='green')
+    if not status:
+        if not config.has_section(profile):
+            click.secho("Section '{}' does not exist in {}!".format(profile, credentialsfile), fg='red')
+            sys.exit(1)
+
+        click.secho('[{}]'.format(profile), fg='green')
+        for k, v in config.items(profile):
+            click.secho('{} = '.format(k), fg='blue', nl=False)
+            if k == 'aws_credentials_expiry':
+                v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
+            click.secho(v, fg='green')
+    else:
+        profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+        is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+        if is_active:
+            click.secho('Active', fg='green')
+        else:
+            click.secho('Expired', fg='red')
 
 
 def prompt_for_role(account_roles):
