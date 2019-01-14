@@ -5,6 +5,8 @@ import re
 import sys
 import configparser
 
+from datetime import datetime
+
 import click
 import click_log
 
@@ -148,30 +150,47 @@ def print_profiles(credentialsfile):
     config = configparser.RawConfigParser()
     config.read(credentialsfile)
     profiles = config.sections()
-    headers = ['Profile', 'Expire Date']
+    headers = ['Profile', 'Expire Date', 'Status']
     expiry = []
+    statuses = []
 
     for profile in profiles:
         profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-        profile_expiry = stsauth.from_epoch(profile_expiry) if profile_expiry else 'No Expiry Set'
-        expiry.append(str(profile_expiry))
+        profile_expiry_string = 'No Expiry Set'
+        is_active = True
+
+        if profile_expiry:
+            profile_expiry_string = str(stsauth.from_epoch(profile_expiry))
+            is_active = stsauth.from_epoch(profile_expiry) > datetime.now()
+
+        expiry.append(profile_expiry_string)
+        statuses.append('Active' if is_active else 'Expired')
 
     profile_max_len = len(max(profiles, key=len))
     expiry_max_len = len(max(expiry, key=len))
-    row_format = "{item_0:<{item_0_len}} {item_1:<{item_1_len}}"
+    statuses_max_len = len(max(statuses, key=len))
+    row_format = "{item_0:<{item_0_len}} {item_1:<{item_1_len}} {item_2:<{item_2_len}}"
     print(row_format.format(
         item_0=headers[0],
         item_1=headers[1],
+        item_2=headers[2],
         item_0_len=profile_max_len,
-        item_1_len=expiry_max_len)
+        item_1_len=expiry_max_len,
+        item_2_len=statuses_max_len)
     )
-    print('-' * profile_max_len + ' ' + '-' * expiry_max_len)
-    for profile in sorted(zip(profiles, expiry)):
+    print('{} {} {}'.format(
+        ('-' * profile_max_len),
+        ('-' * expiry_max_len),
+        ('-' * statuses_max_len))
+    )
+    for profile in sorted(zip(profiles, expiry, statuses)):
         print(row_format.format(
             item_0=profile[0],
             item_1=profile[1],
+            item_2=profile[2],
             item_0_len=profile_max_len,
-            item_1_len=expiry_max_len)
+            item_1_len=expiry_max_len,
+            item_2_len=statuses_max_len)
         )
 
 
@@ -185,10 +204,18 @@ def print_profile(credentialsfile, profile):
 
     click.secho('[{}]'.format(profile), fg='green')
     for k, v in config.items(profile):
-        click.secho('{} = '.format(k), fg='blue', nl=False)
+        click.secho('{}='.format(k), fg='blue', nl=False)
         if k == 'aws_credentials_expiry':
             v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
         click.secho(v, fg='green')
+
+    profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+    is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+    click.secho('status=', fg='blue', nl=False)
+    if is_active:
+        click.secho('active', fg='green')
+    else:
+        click.secho('expired', fg='red')
 
 
 def prompt_for_role(account_roles):
