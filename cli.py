@@ -81,10 +81,13 @@ def authenticate(username, password, idpentryurl, domain,
 
     if profile:
         role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
-    elif len(account_roles) > 1:
+    elif ((len(account_roles) > 1) or
+          (len(account_roles) == 1 and len(account_roles.values()[0]) > 1)):
         role_arn, principal_arn = prompt_for_role(account_roles)
+    elif len(account_roles) == 1 and len(account_roles.values()[0]) == 1:
+        role_arn, principal_arn = account_roles.values()[0][0].get('attr').split(',')
     else:
-        role_arn, principal_arn = account_roles[0].get('attr').split(',')
+        click.secho('No roles are available. Please verify in the ADFS Portal.', fg='red')
 
     # Generate a safe-name for the profile based on acct no. and role
     role_for_section = parse_role_for_profile(role_arn)
