@@ -7,7 +7,6 @@ import configparser
 from collections import defaultdict
 from datetime import datetime
 from xml.etree import ElementTree
-import logging
 
 import boto3
 import click
@@ -16,14 +15,15 @@ import pyotp
 from requests_ntlm import HttpNtlmAuth
 from bs4 import BeautifulSoup
 
+import okta
 from okta import Okta
+from cli import logger
 
 try:
     from urllib.parse import urlparse, urlunparse
 except ImportError:
     from urlparse import urlparse, urlunparse
 
-logger = logging.getLogger(__name__)
 
 
 class STSAuth:
@@ -142,24 +142,26 @@ class STSAuth:
             # return that and continue, otherwise, we will have to dance
             # through authentication.
             return assertion.groups()[0]
+        logger.debug('No SAML assertion found in response. Attempting to log in...')
 
         login_form = response.soup.find(id='loginForm')
         okta_login = response.soup.find(id='okta-login-container')
 
         if okta_login:
-            okta = Okta(
+            state_token = okta.get_state_token_from_response(response)
+            okta_client = Okta(
                 session=self.session,
+                state_token=state_token,
                 okta_org=self.okta_org,
                 okta_shared_secret=self.okta_shared_secret
             )
-            okta_response = okta.handle_okta_verification(response)
+            okta_response = okta_client.handle_okta_verification(response)
             return self.get_saml_response(response=okta_response)
 
         if login_form:
             # If there is no assertion, it is possible the user is attempting
             # to authenticate from outside the network, so we check for a login
             # form in their response.
-            logger.debug('No SAML assertion found in response. Attempting to log in...')
             form_response = self.authenticate_to_adfs_portal(response)
             return self.get_saml_response(response=form_response)
 

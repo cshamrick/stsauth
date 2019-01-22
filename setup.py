@@ -24,7 +24,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/cshamrick/stsauth',
-    py_modules=['stsauth', 'cli'],
+    py_modules=['stsauth', 'cli', 'okta'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

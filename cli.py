@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import logging
 import configparser
 
 from datetime import datetime
@@ -10,12 +11,12 @@ from datetime import datetime
 import click
 import click_log
 
+logger = logging.getLogger(__name__)
+
 import stsauth
 from stsauth import STSAuth
-from stsauth import logger
 
 click_log.basic_config(logger)
-
 
 @click.group()
 @click_log.simple_verbosity_option(logger)
