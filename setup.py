@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def get_requirements(env=''):
@@ -24,7 +24,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/cshamrick/stsauth',
-    py_modules=['stsauth', 'cli', 'okta'],
+    packages=find_packages(),
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -38,7 +38,7 @@ setup(
     tests_require=tests_require,
     entry_points='''
         [console_scripts]
-        stsauth=cli:cli
+        stsauth=stsauth.cli:cli
     ''',
     license='MIT',
 )

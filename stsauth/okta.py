@@ -1,16 +1,21 @@
 import re
 import sys
 import time
-import logging
-import requests
 
 import click
 import pyotp
 from bs4 import BeautifulSoup
 
-from cli import logger
+from stsauth.utils import logger
 
 class Okta:
+    """Creates an instance to handle Okta tasks.
+
+    :param session: Requests Session instance (required).
+    :param state_token: State Token of the active Okta session (required).
+    :param okta_org: Okta organization string (required).
+    :param okta_shared_secret: If using TOTP, Okta Shared Secret string.
+    """
 
     def __init__(self, session, state_token, okta_org, okta_shared_secret=None):
         self.session = session
@@ -152,14 +157,3 @@ class Okta:
             tries += 1
 
         return status == 'SUCCESS'
-
-
-def get_state_token_from_response(response):
-    state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response.text)
-    if state_token_search:
-        if len(state_token_search.groups()) == 1:
-            state_token = state_token_search.groups()[0]
-            logger.debug('Found state_token: {}'.format(state_token))
-            return state_token
-    click.secho('No State Token found in response. Exiting...', fg='red')
-    sys.exit(1)

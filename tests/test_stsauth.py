@@ -5,7 +5,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-from stsauth import STSAuth
+from .context import stsauth
 
 
 class TestSTSAuth(TestCase):

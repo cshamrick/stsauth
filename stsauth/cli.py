@@ -3,18 +3,16 @@
 import os
 import re
 import sys
-import logging
-import configparser
-
 from datetime import datetime
 
 import click
 import click_log
+import configparser
 
-logger = logging.getLogger(__name__)
-
-import stsauth
-from stsauth import STSAuth
+from stsauth import utils
+from stsauth import stsauth
+from stsauth.utils import logger
+from stsauth.stsauth import STSAuth
 
 click_log.basic_config(logger)
 
@@ -77,8 +75,8 @@ def authenticate(username, password, idpentryurl, domain,
 
     assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
-    awsroles = stsauth.parse_roles_from_assertion(assertion)
-    account_roles = stsauth.format_roles_for_display(awsroles)
+    awsroles = utils.parse_roles_from_assertion(assertion)
+    account_roles = utils.format_roles_for_display(awsroles)
 
     if profile:
         role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
@@ -164,8 +162,8 @@ def print_profiles(credentialsfile):
         is_active = True
 
         if profile_expiry:
-            profile_expiry_string = str(stsauth.from_epoch(profile_expiry))
-            is_active = stsauth.from_epoch(profile_expiry) > datetime.now()
+            profile_expiry_string = str(utils.from_epoch(profile_expiry))
+            is_active = utils.from_epoch(profile_expiry) > datetime.now()
 
         expiry.append(profile_expiry_string)
         statuses.append('Active' if is_active else 'Expired')
@@ -210,11 +208,11 @@ def print_profile(credentialsfile, profile):
     for k, v in config.items(profile):
         click.secho('{}='.format(k), fg='blue', nl=False)
         if k == 'aws_credentials_expiry':
-            v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
+            v = '{} ({})'.format(v, str(utils.from_epoch(v)))
         click.secho(v, fg='green')
 
     profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-    is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+    is_active = utils.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
     click.secho('status=', fg='blue', nl=False)
     if is_active:
         click.secho('active', fg='green')
