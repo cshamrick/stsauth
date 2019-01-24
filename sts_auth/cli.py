@@ -9,15 +9,15 @@ import click
 import click_log
 import configparser
 
-from stsauth import utils
-from stsauth import stsauth
-from stsauth.utils import logger
-from stsauth.stsauth import STSAuth
+from sts_auth import utils
+from sts_auth import stsauth
+from sts_auth.stsauth import STSAuth
 
-click_log.basic_config(logger)
+click_log.basic_config(utils.logger)
+
 
 @click.group()
-@click_log.simple_verbosity_option(logger)
+@click_log.simple_verbosity_option(utils.logger)
 @click.version_option()
 def cli():
     pass
@@ -50,7 +50,7 @@ def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, okta_org,
                  okta_shared_secret, region, output, force):
     # UNSET any proxy vars that exist in the session
-    unset_proxy()
+    utils.unset_proxy()
 
     sts_auth = STSAuth(
         username=username,
@@ -141,7 +141,7 @@ def profiles(credentialsfile, profile):
     Args:
         credentialsfile: the file containing the profile details.
     """
-    if profile == None:
+    if profile is None:
         print_profiles(credentialsfile)
     else:
         print_profile(credentialsfile, profile)
@@ -276,19 +276,6 @@ def role_selection_is_valid(selection, account_roles):
         return False
 
     return True
-
-
-def unset_proxy():
-    """Remove proxy settings from the current process
-    """
-    env_vars = [
-        "http_proxy", "https_proxy", "no_proxy", "all_proxy", "ftp_proxy",
-        "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY", "FTP_PROXY"
-    ]
-    for var in env_vars:
-        if var in os.environ:
-            logger.debug('Unsetting {!r} environment variable!'.format(var))
-            del os.environ[var]
 
 
 def parse_role_for_profile(role):

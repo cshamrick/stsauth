@@ -6,7 +6,8 @@ import click
 import pyotp
 from bs4 import BeautifulSoup
 
-from stsauth.utils import logger
+from sts_auth.utils import logger
+
 
 class Okta:
     """Creates an instance to handle Okta tasks.
@@ -36,7 +37,7 @@ class Okta:
             return {f['factorType']: f for f in okta_factors}
         else:
             msg = ('No Okta MFA methods available.\n'
-                'Please visit https://{}.okta.com to configure Okta MFA.')
+                   'Please visit https://{}.okta.com to configure Okta MFA.')
             click.secho(msg.format(self.okta_org), fg='red')
             sys.exit(1)
 
@@ -46,7 +47,7 @@ class Okta:
         # will be required or not.
         if not self.okta_org:
             msg = ('Okta MFA required but no Okta Organization set. '
-                    'Please either set in the config or use `--okta-org`')
+                   'Please either set in the config or use `--okta-org`')
             click.secho(msg, fg='red')
             sys.exit(1)
 
@@ -135,12 +136,12 @@ class Okta:
         tries = 0
         verify_data = {'stateToken': self.state_token}
         verify_url = factor_details.get('_links', {}).get('verify', {}).get('href')
-        if verify_url == None:
+        if verify_url is None:
             click.secho('No Okta verification URL present in response. Exiting...', fg='red')
             sys.exit(1)
         while (status == 'MFA_CHALLENGE' and tries < notify_count):
             msg = '({}/{}) Waiting for Okta push notification to be accepted...'
-            click.secho(msg.format(tries +1, notify_count), fg='green')
+            click.secho(msg.format(tries + 1, notify_count), fg='green')
             for _ in range(poll_count):
                 verify_response = self.session.post(verify_url, json=verify_data)
                 if verify_response.ok:

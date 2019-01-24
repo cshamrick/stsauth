@@ -38,7 +38,7 @@ setup(
     tests_require=tests_require,
     entry_points='''
         [console_scripts]
-        stsauth=stsauth.cli:cli
+        stsauth=sts_auth.cli:cli
     ''',
     license='MIT',
 )

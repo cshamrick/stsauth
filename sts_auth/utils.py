@@ -1,3 +1,4 @@
+import os
 import re
 import base64
 import logging
@@ -6,6 +7,7 @@ from collections import defaultdict
 from xml.etree import ElementTree
 
 logger = logging.getLogger(__name__)
+
 
 def get_state_token_from_response(response):
     state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response.text)
@@ -134,3 +136,16 @@ def from_epoch(seconds):
         datetime representation of seconds since epoch
     """
     return datetime.fromtimestamp(int(float(seconds)))
+
+
+def unset_proxy():
+    """Remove proxy settings from the current process
+    """
+    env_vars = [
+        "http_proxy", "https_proxy", "no_proxy", "all_proxy", "ftp_proxy",
+        "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY", "FTP_PROXY"
+    ]
+    for var in env_vars:
+        if var in os.environ:
+            logger.debug('Unsetting {!r} environment variable!'.format(var))
+            del os.environ[var]

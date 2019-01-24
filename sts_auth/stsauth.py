@@ -12,15 +12,14 @@ import configparser
 from requests_ntlm import HttpNtlmAuth
 from bs4 import BeautifulSoup
 
-from stsauth import utils
-from stsauth.okta import Okta
-from stsauth.utils import logger
+from sts_auth import utils
+from sts_auth.okta import Okta
+from sts_auth.utils import logger
 
 try:
     from urllib.parse import urlparse, urlunparse
 except ImportError:
     from urlparse import urlparse, urlunparse
-
 
 
 class STSAuth:

@@ -5,7 +5,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-from .context import stsauth
+from sts_auth.stsauth import STSAuth
 
 
 class TestSTSAuth(TestCase):
@@ -26,4 +26,4 @@ class TestSTSAuth(TestCase):
 
     def test_sts_auth(self):
         # ipdb.set_trace()
-        self.assertEquals(1, 1)
+        self.assertEqual(1, 1)
