@@ -3,22 +3,21 @@
 import os
 import re
 import sys
-import configparser
-
 from datetime import datetime
 
 import click
 import click_log
+import configparser
 
-import stsauth
-from stsauth import STSAuth
-from stsauth import logger
+from sts_auth import utils
+from sts_auth import stsauth
+from sts_auth.stsauth import STSAuth
 
-click_log.basic_config(logger)
+click_log.basic_config(utils.logger)
 
 
 @click.group()
-@click_log.simple_verbosity_option(logger)
+@click_log.simple_verbosity_option(utils.logger)
 @click.version_option()
 def cli():
     pass
@@ -51,7 +50,7 @@ def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, okta_org,
                  okta_shared_secret, region, output, force):
     # UNSET any proxy vars that exist in the session
-    unset_proxy()
+    utils.unset_proxy()
 
     sts_auth = STSAuth(
         username=username,
@@ -76,8 +75,8 @@ def authenticate(username, password, idpentryurl, domain,
 
     assertion = sts_auth.get_saml_response()
     # Parse the returned assertion and extract the authorized roles
-    awsroles = stsauth.parse_roles_from_assertion(assertion)
-    account_roles = stsauth.format_roles_for_display(awsroles)
+    awsroles = utils.parse_roles_from_assertion(assertion)
+    account_roles = utils.format_roles_for_display(awsroles)
 
     if profile:
         role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
@@ -142,7 +141,7 @@ def profiles(credentialsfile, profile):
     Args:
         credentialsfile: the file containing the profile details.
     """
-    if profile == None:
+    if profile is None:
         print_profiles(credentialsfile)
     else:
         print_profile(credentialsfile, profile)
@@ -163,8 +162,8 @@ def print_profiles(credentialsfile):
         is_active = True
 
         if profile_expiry:
-            profile_expiry_string = str(stsauth.from_epoch(profile_expiry))
-            is_active = stsauth.from_epoch(profile_expiry) > datetime.now()
+            profile_expiry_string = str(utils.from_epoch(profile_expiry))
+            is_active = utils.from_epoch(profile_expiry) > datetime.now()
 
         expiry.append(profile_expiry_string)
         statuses.append('Active' if is_active else 'Expired')
@@ -209,11 +208,11 @@ def print_profile(credentialsfile, profile):
     for k, v in config.items(profile):
         click.secho('{}='.format(k), fg='blue', nl=False)
         if k == 'aws_credentials_expiry':
-            v = '{} ({})'.format(v, str(stsauth.from_epoch(v)))
+            v = '{} ({})'.format(v, str(utils.from_epoch(v)))
         click.secho(v, fg='green')
 
     profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-    is_active = stsauth.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+    is_active = utils.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
     click.secho('status=', fg='blue', nl=False)
     if is_active:
         click.secho('active', fg='green')
@@ -277,19 +276,6 @@ def role_selection_is_valid(selection, account_roles):
         return False
 
     return True
-
-
-def unset_proxy():
-    """Remove proxy settings from the current process
-    """
-    env_vars = [
-        "http_proxy", "https_proxy", "no_proxy", "all_proxy", "ftp_proxy",
-        "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY", "FTP_PROXY"
-    ]
-    for var in env_vars:
-        if var in os.environ:
-            logger.debug('Unsetting {!r} environment variable!'.format(var))
-            del os.environ[var]
 
 
 def parse_role_for_profile(role):
