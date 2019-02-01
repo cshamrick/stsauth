@@ -137,14 +137,14 @@ class STSAuth:
             # If there is already an assertion in the response, we can simply
             # return that and continue, otherwise, we will have to dance
             # through authentication.
-            return assertion.groups()[0]
+            return assertion.group(1)
         logger.debug('No SAML assertion found in response. Attempting to log in...')
 
         login_form = response.soup.find(id='loginForm')
         okta_login = response.soup.find(id='okta-login-container')
 
         if okta_login:
-            state_token = utils.get_state_token_from_response(response)
+            state_token = utils.get_state_token_from_response(response.text)
             if state_token is not None:
                 logger.debug('Found state_token: {}'.format(state_token))
             else:
