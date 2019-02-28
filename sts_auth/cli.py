@@ -49,8 +49,6 @@ def cli():
 def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, okta_org,
                  okta_shared_secret, region, output, force):
-    # UNSET any proxy vars that exist in the session
-    utils.unset_proxy()
 
     sts_auth = STSAuth(
         username=username,
@@ -73,21 +71,29 @@ def authenticate(username, password, idpentryurl, domain,
 
     sts_auth.parse_config_file()
 
-    assertion = sts_auth.get_saml_response()
+    saml_response = sts_auth.get_saml_response()
+    adfs_response = sts_auth.fetch_aws_account_names(saml_response)
+    account_map = utils.parse_aws_account_names_from_response(adfs_response)
     # Parse the returned assertion and extract the authorized roles
-    awsroles = utils.parse_roles_from_assertion(assertion)
-    account_roles = utils.format_roles_for_display(awsroles)
+    awsroles = utils.parse_roles_from_assertion(saml_response.assertion)
+    account_roles = utils.format_roles_for_display(awsroles, account_map)
+    account_roles_len = len(account_roles)
+    account_roles_vals_len = len(list(account_roles.values())[0])
 
     if profile:
-        role_arn, principal_arn = parse_arn_from_input_profile(account_roles, profile)
-    elif ((len(account_roles) > 1) or
-          (len(account_roles) == 1 and len(account_roles.values()[0]) > 1)):
-        role_arn, principal_arn = prompt_for_role(account_roles)
-    elif len(account_roles) == 1 and len(account_roles.values()[0]) == 1:
-        role_arn, principal_arn = account_roles.values()[0][0].get('attr').split(',')
+        # If a profile is passed in, use that
+        role = parse_arn_from_input_profile(account_roles, profile)
+    elif ((account_roles_len > 1) or (account_roles_len == 1 and account_roles_vals_len > 1)):
+        # If there is more than one account or there is one account with multiple roles, prompt
+        role = prompt_for_role(account_map, account_roles)
+    elif account_roles_len == 1 and account_roles_vals_len == 1:
+        # If there is one account and only one role, use it
+        role = account_roles.values()[0][0]
     else:
         click.secho('No roles are available. Please verify in the ADFS Portal.', fg='red')
 
+    role_arn, principal_arn = role.get('attr').split(',')
+    acct_name = role.get('name', '')
     # Generate a safe-name for the profile based on acct no. and role
     role_for_section = parse_role_for_profile(role_arn)
 
@@ -99,10 +105,10 @@ def authenticate(username, password, idpentryurl, domain,
     click.secho("\nRequesting credentials for role: " + role_arn, fg='green')
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
-    token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, assertion)
+    token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion)
 
     # Put the credentials into a role specific section
-    sts_auth.write_to_configuration_file(token, role_for_section)
+    sts_auth.write_to_configuration_file(token, acct_name, role_for_section)
 
     # Give the user some basic info as to what has just happened
     msg = (
@@ -130,31 +136,34 @@ def authenticate(username, password, idpentryurl, domain,
               default='~/.aws/credentials')
 @click.argument('profile', nargs=1, required=False)
 def profiles(credentialsfile, profile):
-    """Lists the profile details from the credentialsfile.
-
-    Prints a list to the cli containing a tabular list of Profile and Expiry:
-    Profile             Expire Date
-    ------------------- -----------------
-    test                2018-01-01 00:00:00
-    ......
+    """Lists the profile details from the credentialsfile or a specified profile.
 
     Args:
         credentialsfile: the file containing the profile details.
+        profile: (Optional) a specific profile to print details for.
     """
-    if profile is None:
-        print_profiles(credentialsfile)
-    else:
-        print_profile(credentialsfile, profile)
-
-
-def print_profiles(credentialsfile):
     credentialsfile = os.path.expanduser(credentialsfile)
     config = configparser.RawConfigParser()
     config.read(credentialsfile)
+
+    if profile is None:
+        headers = ['Account', 'Profile', 'Expire Date', 'Status']
+        profiles = fetch_profiles_from_config(config)
+        print_table_format(headers, profiles)
+    else:
+        if config.has_section(profile):
+            print_profile(config, profile)
+        else:
+            msg = "Section '{}' does not exist in {}!"
+            click.secho(msg.format(profile, credentialsfile), fg='red')
+            sys.exit(1)
+
+
+def fetch_profiles_from_config(config):
     profiles = config.sections()
-    headers = ['Profile', 'Expire Date', 'Status']
     expiry = []
     statuses = []
+    accounts = []
 
     for profile in profiles:
         profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
@@ -165,45 +174,53 @@ def print_profiles(credentialsfile):
             profile_expiry_string = str(utils.from_epoch(profile_expiry))
             is_active = utils.from_epoch(profile_expiry) > datetime.now()
 
+        account = config.get(profile, 'account', fallback='None')
+        accounts.append(account)
         expiry.append(profile_expiry_string)
         statuses.append('Active' if is_active else 'Expired')
 
-    profile_max_len = len(max(profiles, key=len))
-    expiry_max_len = len(max(expiry, key=len))
-    statuses_max_len = len(max(statuses, key=len))
-    row_format = "{item_0:<{item_0_len}} {item_1:<{item_1_len}} {item_2:<{item_2_len}}"
-    print(row_format.format(
-        item_0=headers[0],
-        item_1=headers[1],
-        item_2=headers[2],
-        item_0_len=profile_max_len,
-        item_1_len=expiry_max_len,
-        item_2_len=statuses_max_len)
-    )
-    print('{} {} {}'.format(
-        ('-' * profile_max_len),
-        ('-' * expiry_max_len),
-        ('-' * statuses_max_len))
-    )
-    for profile in sorted(zip(profiles, expiry, statuses)):
-        print(row_format.format(
-            item_0=profile[0],
-            item_1=profile[1],
-            item_2=profile[2],
-            item_0_len=profile_max_len,
-            item_1_len=expiry_max_len,
-            item_2_len=statuses_max_len)
-        )
+    return [accounts, profiles, expiry, statuses]
 
 
-def print_profile(credentialsfile, profile):
-    credentialsfile = os.path.expanduser(credentialsfile)
-    config = configparser.RawConfigParser()
-    config.read(credentialsfile)
-    if not config.has_section(profile):
-        click.secho("Section '{}' does not exist in {}!".format(profile, credentialsfile), fg='red')
-        sys.exit(1)
+def print_table_format(headers, values):
+    """Formats and prints tabular formatted data.
 
+    headers = ['col1', 'col2']
+    values  = [
+        ['row1col1', 'row2col1'],
+        ['row1col2', 'row2col2']
+    ]
+
+    Output:
+    col1     col2
+    -------- --------
+    row1col1 row2col1
+    row1col2 row2col2
+
+    Args:
+        headers: A list of the headers for each column.
+        values: A list of lists, each list containing a column of data.
+    """
+    if len(headers) != len(values):
+        raise Exception("Not enough headers for columns.")
+    row_format = ""
+    max_lens = []
+    for i, v in enumerate(values):
+        row_format += "{{{0}:<{{{1}}}}} ".format(i * 2, (i * 2) + 1)
+        v.insert(0, headers[i])
+        max_len = len(max(v, key=len))
+        max_lens.append(max_len)
+        v.insert(1, ('-' * max_len))
+
+    row_len = len(values) + len(max_lens)
+    for row_items in zip(*values):
+        row = [None] * row_len
+        row[::2] = row_items
+        row[1::2] = max_lens
+        print(row_format.format(*row))
+
+
+def print_profile(config, profile):
     click.secho('[{}]'.format(profile), fg='green')
     for k, v in config.items(profile):
         click.secho('{}='.format(k), fg='blue', nl=False)
@@ -220,21 +237,23 @@ def print_profile(credentialsfile, profile):
         click.secho('expired', fg='red')
 
 
-def prompt_for_role(account_roles):
+def prompt_for_role(account_map, account_roles):
     """Prompts the user to select a role based off what roles are available to them.
 
     Provides a prompt listing out accounts available to the user and does some basic
     checks to validate their input. If the input is invalid, re-prompts the user.
 
     Args:
-        account_roles: list of account and role details
+        account_map: dictionary of account ids and account names
+        account_roles: dictionary of account and role details
 
     Returns:
-        Set containing the Role ARN  and Principal ARN
+        Set containing the selected Role ARN and Principal ARN
     """
     click.secho('Please choose the role you would like to assume:', fg='green')
     for acct_id, roles in account_roles.items():
-        click.secho('Account {}:'.format(acct_id), fg='blue')
+        acct_name = account_map[acct_id]
+        click.secho('Account: {} ({})'.format(acct_name, acct_id), fg='blue')
         for role in roles:
             click.secho('[{num}]: {label}'.format(**role))
         click.secho('')
@@ -245,13 +264,11 @@ def prompt_for_role(account_roles):
 
     # Basic sanity check of input
     if not role_selection_is_valid(selected_role_index, flat_roles):
-        return prompt_for_role(account_roles)
+        return prompt_for_role(account_map, account_roles)
 
-    attr = next((v['attr'] for v in flat_roles if v['num'] == selected_role_index), None)
+    role = next((v['attr'] for v in flat_roles if v['num'] == selected_role_index), None)
 
-    role_arn, principal_arn = attr.split(',')
-
-    return role_arn, principal_arn
+    return role
 
 
 def role_selection_is_valid(selection, account_roles):
@@ -328,10 +345,8 @@ def parse_arn_from_input_profile(account_roles, profile):
     profile_split = profile.split('-')
     acct_number = profile_split[0]
     role_name = '-'.join(profile_split[1:])
-    arn = next((item for item in account_roles[acct_number] if item['label'] == role_name), None)
-    if arn:
-        role_arn, principal_arn = arn['attr'].split(',')
-    else:
+    role = next((item for item in account_roles[acct_number] if item['label'] == role_name), None)
+    if role is None:
         click.secho(
             'Profile not found!\n'
             'Please check `stsauth profiles` for a list of available profiles\n'
@@ -340,5 +355,4 @@ def parse_arn_from_input_profile(account_roles, profile):
             fg='red'
         )
         sys.exit()
-
-    return role_arn, principal_arn
+    return role
