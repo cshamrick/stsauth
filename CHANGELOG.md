@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.7
+
+- [bugfix] Fixed issue where the role returned from the cli selection prompt was a string not an object.
+
 ## v0.3.6
 
 - [feature] Show account names in the prompt to select a role
