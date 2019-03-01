@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.6
+
+- [feature] Show account names in the prompt to select a role
+
+## v0.3.5
+
+- Refactor project structure to support testing
+  - Create `okta` and `utils` module
+
+## v0.3.4
+
+- [bug-fix] Fixed assumption of 1 account meaning 1 role is available
+
+## v0.3.3
+
+- [feature] Add expiration status of credentials to `stsauth profiles` output
+
+## v0.3.2
+
+## v0.3.1
+
+- [feature] Add `stsauth profiles [PROFILE]` to get specific profile details
+- [feature] Sort the role selection prompt output
+
 ## v0.3.0
 
 - Add support for authenticating to Okta through Push notifications and TOTP

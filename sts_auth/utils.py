@@ -16,25 +16,33 @@ def get_state_token_from_response(response_text):
         return state_token_search.group(1)
 
 
-def format_roles_for_display(attrs):
-    """Formats role ARNs for display to the user and a dictionary for lookup.
+def parse_aws_account_names_from_response(response):
+    acct_map = {}
+    for _acct in response.soup.find_all('div', {'class': 'saml-account-name'}):
+        acct = _acct.contents[0]
+        acct_id = acct.split(' ')[2].strip('()')
+        acct_name = acct.split(' ')[1]
+        acct_map[acct_id] = acct_name
+    return acct_map
 
-    We need two objects so that we can easily display a pretty list to the user
-    which requests their input. Once they provide input, we need to determine
-    which ARN was mapped to their input.
+
+def format_roles_for_display(attrs, account_map):
+    """Formats role ARNs for display to the user.
 
     Args:
         attrs: List of ARNs/roles.
+        account_map: Dictionary of account id and account name pairs.
 
     Returns:
-        List of dictionaries used to display to the user
+        Dictionary used to display roles/accounts to the user
     """
     accts = []
     for attr in attrs:
         role = attr.split(',')[0]
         acct_id = get_account_id_from_role(role)
-        acct_name = role.split('/')[1]
-        item = {'label': acct_name, 'attr': attr, 'id': acct_id}
+        acct_name = account_map.get(acct_id, '')
+        role_name = role.split('/')[1]
+        item = {'label': role_name, 'attr': attr, 'id': acct_id, 'name': acct_name}
         accts.append(item)
     sorted_acct_roles = [k for k in sorted(accts, key=lambda k: k['id'])]
     account_roles = defaultdict(list)

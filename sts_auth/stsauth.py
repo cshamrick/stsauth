@@ -134,22 +134,23 @@ class STSAuth:
         assertion = re.search(assertion_pattern, response.text)
 
         if assertion:
-            # If there is already an assertion in the response, we can simply
-            # return that and continue, otherwise, we will have to dance
-            # through authentication.
-            return assertion.group(1)
+            # If there is already an assertion in the response body,
+            # we can attach the parsed assertion to the response object and
+            # return the whole response for use later.
+            # return account_map, assertion.group(1)
+            response.assertion = assertion.group(1)
+            return response
         logger.debug('No SAML assertion found in response. Attempting to log in...')
 
         login_form = response.soup.find(id='loginForm')
         okta_login = response.soup.find(id='okta-login-container')
 
         if okta_login:
-            state_token = utils.get_state_token_from_response(response.text)
-            if state_token is not None:
-                logger.debug('Found state_token: {}'.format(state_token))
-            else:
+            state_token = utils.get_state_token_from_response(response)
+            if state_token is None:
                 click.secho('No State Token found in response. Exiting...', fg='red')
                 sys.exit(1)
+            logger.debug('Found state_token: {}'.format(state_token))
             okta_client = Okta(
                 session=self.session,
                 state_token=state_token,
@@ -246,7 +247,7 @@ class STSAuth:
         )
         return token
 
-    def write_to_configuration_file(self, token, profile=None):
+    def write_to_configuration_file(self, token, account_name, profile=None):
         """Store credentials in a specific profile.
 
         Takes the credentials and details from the token provided and writes them out to a
@@ -254,6 +255,7 @@ class STSAuth:
 
         Args:
             token: Object containing the credentials to write out.
+            account_name: Name of AWS Account
             profile: optional profile paramater. Uses the class profile if undefined
         """
         if profile is None:
@@ -271,6 +273,7 @@ class STSAuth:
         expiration = utils.to_epoch(credentials.get('Expiration', ''))
         self.config.set(profile, 'output', self.output)
         self.config.set(profile, 'region', self.region)
+        self.config.set(profile, 'account', account_name)
         self.config.set(profile, 'aws_access_key_id', credentials.get('AccessKeyId', ''))
         self.config.set(profile, 'aws_secret_access_key', credentials.get('SecretAccessKey', ''))
         self.config.set(profile, 'aws_session_token', credentials.get('SessionToken', ''))
@@ -279,3 +282,14 @@ class STSAuth:
         # Write the AWS STS token into the AWS credential file
         with open(self.credentialsfile, 'w') as f:
             self.config.write(f)
+
+    def fetch_aws_account_names(self, response):
+        hiddenform = response.soup.find('form', {'name': 'hiddenform'})
+        headers = {'Referer': response.url, 'Content-Type': 'application/x-www-form-urlencoded'}
+        selectors = ",".join("{}[name]".format(i) for i in ("input", "button", "textarea", "select"))
+        data = [(tag.get('name'), tag.get('value')) for tag in hiddenform.select(selectors)]
+
+        adfs_response = self.session.post(hiddenform.attrs.get('action'), data=data, headers=headers)
+        adfs_response.soup = BeautifulSoup(adfs_response.text, "lxml")
+
+        return adfs_response
