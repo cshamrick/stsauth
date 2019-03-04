@@ -9,11 +9,12 @@ from xml.etree import ElementTree
 logger = logging.getLogger(__name__)
 
 
-def get_state_token_from_response(response):
-    state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response.text)
-    if state_token_search:
-        if len(state_token_search.groups()) == 1:
-            return state_token_search.groups()[0]
+def get_state_token_from_response(response_text):
+    state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response_text)
+    group_len = 0 if state_token_search is None else len(state_token_search.groups())
+    if group_len == 1:
+        return state_token_search.group(1)
+    return None
 
 
 def parse_aws_account_names_from_response(response):
@@ -38,8 +39,7 @@ def format_roles_for_display(attrs, account_map):
     """
     accts = []
     for attr in attrs:
-        _attr = attr.split(',')
-        role = _attr[0] if ':role/' in _attr[0] else _attr[1]
+        role = attr.split(',')[0]
         acct_id = get_account_id_from_role(role)
         acct_name = account_map.get(acct_id, '')
         role_name = role.split('/')[1]
@@ -53,25 +53,26 @@ def format_roles_for_display(attrs, account_map):
     return account_roles
 
 
-def parse_roles_from_assertion(xml_body):
-    """Given the xml_body assertion, return a list of roles.
+def parse_roles_from_assertion(assertion):
+    """Given the base64 encoded assertion, return a list of roles.
 
     Args:
-        xml_body: XML Body containing roles returned from AWS.
+        assertion: base64 encoded XML Body containing roles returned from AWS.
 
     Returns:
         List of roles available to the user.
     """
     roles = []
-    root = ElementTree.fromstring(base64.b64decode(xml_body))
+    xml = base64.b64decode(assertion)
+    root = ElementTree.fromstring(xml)
     role = 'https://aws.amazon.com/SAML/Attributes/Role'
-    attr_base = '{urn:oasis:names:tc:SAML:2.0:assertion}'
-    attr = '{}Attribute'.format(attr_base)
-    attr_value = '{}Value'.format(attr)
-    for saml2attr in root.iter(attr):
-        if saml2attr.get('Name') == role:
-            for saml2attrvalue in saml2attr.iter(attr_value):
-                roles.append(saml2attrvalue.text)
+    attr_base = '{urn:oasis:names:tc:SAML:2.0:assertion}Attribute'
+    attr_value = '{}Value'.format(attr_base)
+
+    for attr in root.iter(attr_base):
+        if attr.get('Name') == role:
+            for attrvalue in attr.iter(attr_value):
+                roles.append(attrvalue.text)
     roles = format_role_order(roles)
     return roles
 
@@ -92,9 +93,9 @@ def format_role_order(roles):
     for role in roles:
         chunks = role.split(',')
         if 'saml-provider' in chunks[0]:
-            newrole = chunks[1] + ',' + chunks[0]
+            _role = chunks[1] + ',' + chunks[0]
             index = roles.index(role)
-            roles.insert(index, newrole)
+            roles.insert(index, _role)
             roles.remove(role)
     return roles
 
@@ -111,14 +112,12 @@ def get_account_id_from_role(role):
     Raises:
         Exception: An error occured with getting the Account ID.
     """
-    acct_id_re = re.compile(r'::(\d+):')
-    acct_ids = re.search(acct_id_re, role)
-    if acct_ids.groups():
-        for ids in acct_ids.groups():
-            if len(ids) == 12:
-                return ids
+    acct_id_re = re.compile(r'::(\d{12}):')
+    acct_id = set(re.findall(acct_id_re, role))
+    if len(acct_id) == 1:
+        return acct_id.pop()
     else:
-        raise Exception('Missing or malformed account ID!')
+        raise Exception('Missing or malformed account ID in {}!'.format(role))
 
 
 def to_epoch(dt):
@@ -143,7 +142,7 @@ def from_epoch(seconds):
     Returns:
         datetime representation of seconds since epoch
     """
-    return datetime.fromtimestamp(int(float(seconds)))
+    return datetime.utcfromtimestamp(float(seconds))
 
 
 def unset_proxy():

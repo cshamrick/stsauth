@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from sts_auth.utils import logger
 
 
-class Okta:
+class Okta(object):
     """Creates an instance to handle Okta tasks.
 
     :param session: Requests Session instance (required).
