@@ -127,7 +127,8 @@ def authenticate(username, password, idpentryurl, domain,
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
 @click.argument('profile', nargs=1, required=False)
-def profiles(credentialsfile, profile):
+@click.option('--query', '-q', help='Value to query from the profile.')
+def profiles(credentialsfile, profile, query):
     """Lists the profile details from the credentialsfile.
 
     Prints a list to the cli containing a tabular list of Profile and Expiry:
@@ -139,10 +140,18 @@ def profiles(credentialsfile, profile):
     Args:
         credentialsfile: the file containing the profile details.
     """
-    if profile == None:
-        print_profiles(credentialsfile)
+
+    if profile is None:
+        if query is not None:
+            click.secho('When using the query parameter, profile is required.')
+            sys.exit(1);
+        else:
+            print_profiles(credentialsfile)
     else:
-        print_profile(credentialsfile, profile)
+        if query is None:
+            print_profile(credentialsfile, profile)
+        else:
+            print_profile_with_query(credentialsfile, profile, query)
 
 
 def print_profiles(credentialsfile):
@@ -216,6 +225,24 @@ def print_profile(credentialsfile, profile):
         click.secho('active', fg='green')
     else:
         click.secho('expired', fg='red')
+
+def print_profile_with_query(credentialsfile, profile, query):
+    credentialsfile = os.path.expanduser(credentialsfile)
+    config = configparser.RawConfigParser()
+    config.read(credentialsfile)
+    if not config.has_section(profile):
+        click.secho("Section '{}' does not exist in {}!".format(profile, credentialsfile), fg='red')
+        sys.exit(1)
+
+    for k, v in config.items(profile):
+        if k == query:
+            click.secho(v)
+            sys.exit(0)
+    click.secho("Invalid value for parameter: query")
+    click.secho("Allowed values:")
+    for k, v in config.items(profile):
+        click.secho(k)
+    sys.exit(1)
 
 
 def prompt_for_role(account_roles):
