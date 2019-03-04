@@ -135,7 +135,8 @@ def authenticate(username, password, idpentryurl, domain,
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
 @click.argument('profile', nargs=1, required=False)
-def profiles(credentialsfile, profile):
+@click.option('--query', '-q', help='Value to query from the profile.')
+def profiles(credentialsfile, profile, query):
     """Lists the profile details from the credentialsfile or a specified profile.
 
     Args:
@@ -147,12 +148,19 @@ def profiles(credentialsfile, profile):
     config.read(credentialsfile)
 
     if profile is None:
-        headers = ['Account', 'Profile', 'Expire Date', 'Status']
-        profiles = fetch_profiles_from_config(config)
-        print_table_format(headers, profiles)
+        if query is not None:
+            click.secho("When using the 'query' parameter, 'profile' is required.", fg='red')
+            sys.exit(1)
+        else:
+            headers = ['Account', 'Profile', 'Expire Date', 'Status']
+            profiles = fetch_profiles_from_config(config)
+            print_table_format(headers, profiles)
     else:
         if config.has_section(profile):
-            print_profile(config, profile)
+            if query is not None:
+                fetch_profile_attribute(config, profile, query)
+            else:
+                print_profile(config, profile)
         else:
             msg = "Section '{}' does not exist in {}!"
             click.secho(msg.format(profile, credentialsfile), fg='red')
@@ -235,6 +243,21 @@ def print_profile(config, profile):
         click.secho('active', fg='green')
     else:
         click.secho('expired', fg='red')
+
+
+def fetch_profile_attribute(config, profile, query):
+    profile_attributes = dict(config.items(profile))
+    profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+    is_active = utils.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+    profile_attributes['status'] = 'active' if is_active else 'expired'
+    attribute_value = profile_attributes.get(query)
+
+    if attribute_value is None:
+        click.secho("Invalid value {!r} for 'query' parameter. Valid choices:".format(query), fg='red')
+        click.secho(", ".join(profile_attributes.keys()), fg='red')
+        sys.exit(1)
+    else:
+        click.secho(attribute_value)
 
 
 def prompt_for_role(account_map, account_roles):
