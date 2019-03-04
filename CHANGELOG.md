@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.8
+
+- [feature] Add ability to query a specific field under the `stsauth profiles` command
+
 ## v0.3.7
 
 - [bugfix] Fixed issue where the role returned from the cli selection prompt was a string not an object.
