@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def get_requirements(env=''):
@@ -17,14 +17,14 @@ tests_require = get_requirements('test')
 
 setup(
     name='stsauth',
-    version='0.3.3',
+    version='0.3.7',
     author='Scott Hamrick',
     author_email='scott@scotthamrick.com',
     description='CLI tool for fetching AWS tokens.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/cshamrick/stsauth',
-    py_modules=['stsauth', 'cli'],
+    packages=find_packages(),
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -38,7 +38,7 @@ setup(
     tests_require=tests_require,
     entry_points='''
         [console_scripts]
-        stsauth=cli:cli
+        stsauth=sts_auth.cli:cli
     ''',
     license='MIT',
 )

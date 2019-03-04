@@ -92,48 +92,54 @@ Password:
 
 Please choose the role you would like to assume:
 Account 000000000000:
-[0]: ADFS-Account-One
-[1]: ADFS-Account-Two
+[0]: ADFS-Role-One
+[1]: ADFS-Role-Two
 
 Account 000000000001:
-[2]: ADFS-Account-One
+[2]: ADFS-Role-One
 
 Account 000000000002:
-[3]: ADFS-Account-One
-[4]: ADFS-Account-Two
+[3]: ADFS-Role-One
+[4]: ADFS-Role-Two
 
 Selection: 2
 
-Requesting credentials for role: arn:aws:iam::000000000001:role/ADFS-Account-One
+Requesting credentials for role: arn:aws:iam::000000000001:role/ADFS-Role-One
 
 ------------------------------------------------------------
 Your new access key pair has been generated with the following details:
 ------------------------------------------------------------
 File Path: /Users/username/.aws/credentials
-Profile: 000000000001-ADFS-Account-One
+Profile: 000000000001-ADFS-Role-One
 Expiration Date: 2018-06-27 16:29:01+00:00
 ------------------------------------------------------------
 To use this credential, call the AWS CLI with the --profile option:
-(e.g. aws --profile 000000000001-ADFS-Account-One ec2 describe-instances).
+(e.g. aws --profile 000000000001-ADFS-Role-One ec2 describe-instances).
+export AWS_PROFILE=000000000001-ADFS-Role-One
 --------------------------------------------------------------
 
 $ stsauth profiles --help
-Usage: stsauth profiles [OPTIONS]
+Usage: stsauth profiles [OPTIONS] [PROFILE]
+
+  Lists the profile details from the credentialsfile or a specified profile.
+
+  Args:     credentialsfile: the file containing the profile details.
+  profile: (Optional) a specific profile to print details for.
 
 Options:
   -c, --credentialsfile TEXT  Path to AWS credentials file.
   --help                      Show this message and exit.
 
 $ stsauth profiles
-Profile                           Expire Date
---------------------------------- -------------------
-default                           No Expiry Set
-saml                              2018-06-25 16:32:20
-000000000000-ADFS-Account-One     2018-06-25 16:36:27
-000000000000-ADFS-Account-Two     2018-06-25 16:47:51
-000000000001-ADFS-Account-One     2018-06-27 10:04:46
-000000000002-ADFS-Account-One     2018-06-27 11:23:23
-000000000002-ADFS-Account-Two     2018-06-27 11:28:22
+Account     Profile                    Expire Date         Status
+----------- -------------------------- ------------------- -------
+None        default                    No Expiry Set       Active
+None        saml                       2018-06-25 16:32:20 Expired
+Account-One 000000000000-ADFS-Role-One 2018-06-25 16:36:27 Expired
+Account-Two 000000000000-ADFS-Role-Two 2018-06-25 16:47:51 Expired
+Account-One 000000000001-ADFS-Role-One 2018-06-27 10:04:46 Active
+Account-One 000000000002-ADFS-Role-One 2018-06-27 11:23:23 Active
+Account-Two 000000000002-ADFS-Role-Two 2018-06-27 11:28:22 Active
 ```
 
 ## Warning

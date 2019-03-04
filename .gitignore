@@ -109,3 +109,5 @@ tests/fixtures/
 tests/reports/
 
 .idea
+
+*scratch*
