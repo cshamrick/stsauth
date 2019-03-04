@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import TestCase
 
 from sts_auth import utils
@@ -90,3 +91,14 @@ class TestGetAccountIdFromRole(TestCase):
         with self.assertRaises(Exception) as exc:
             utils.get_account_id_from_role(self.different_ids_role)
         self.assertTrue(self.different_ids_role in exc.exception.args[0])
+
+
+class TestToFromEpoch(TestCase):
+
+    def setUp(self):
+        self.now = datetime.utcnow()
+
+    def testConvertBackAndForth(self):
+        epoch = utils.to_epoch(self.now)
+        dt = utils.from_epoch(epoch)
+        self.assertEqual(self.now, dt)

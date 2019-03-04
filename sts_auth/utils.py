@@ -141,7 +141,7 @@ def from_epoch(seconds):
     Returns:
         datetime representation of seconds since epoch
     """
-    return datetime.fromtimestamp(int(float(seconds)))
+    return datetime.utcfromtimestamp(float(seconds))
 
 
 def unset_proxy():
