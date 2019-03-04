@@ -14,6 +14,7 @@ def get_state_token_from_response(response_text):
     group_len = 0 if state_token_search is None else len(state_token_search.groups())
     if group_len == 1:
         return state_token_search.group(1)
+    return None
 
 
 def parse_aws_account_names_from_response(response):
