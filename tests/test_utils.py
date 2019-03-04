@@ -22,11 +22,12 @@ class TestFormatRolesForDisplay(TestCase):
 
     def test_format_roles_for_display_full(self):
         attrs = fixtures.full_attributes
-        account_roles = utils.format_roles_for_display(attrs)
+        account_map = fixtures.account_map
+        account_roles = utils.format_roles_for_display(attrs, account_map)
         self.assertDictEqual(fixtures.full_account_roles, account_roles)
 
     def test_format_roles_for_display_empty(self):
-        account_roles = utils.format_roles_for_display([])
+        account_roles = utils.format_roles_for_display([], {})
         self.assertDictEqual({}, account_roles)
 
     # def test_format_roles_for_display_out_of_order(self):
@@ -56,35 +57,36 @@ class TestFormatRoleOrder(TestCase):
 class TestGetAccountIdFromRole(TestCase):
 
     def setUp(self):
-        self.acct_id = '000000000000'
+        self.acct_id_1 = '000000000000'
+        self.acct_id_2 = '000000000001'
         self.short_acct_id = '00000000'
         self._role = (
             'arn:aws:iam::{}:role/ADFS-0a,'
             'arn:aws:iam::{}:saml-provider/ADFS'
         )
-        self.role = self.role.format(
-            self.acct_id,
-            self.acct_id
+        self.role = self._role.format(
+            self.acct_id_1,
+            self.acct_id_1
         )
         self.short_acct_id_role = self._role.format(
             self.short_acct_id,
             self.short_acct_id
         )
         self.different_ids_role = self._role.format(
-            self.acct_id,
-            self.short_acct_id
+            self.acct_id_1,
+            self.acct_id_2
         )
 
     def test_get_account_id_from_role(self):
         acct_id = utils.get_account_id_from_role(self.role)
-        self.assertEqual(acct_id, self.acct_id)
+        self.assertEqual(acct_id, self.acct_id_1)
 
     def test_get_account_id_from_role_short(self):
         with self.assertRaises(Exception) as exc:
             utils.get_account_id_from_role(self.short_acct_id_role)
-        self.assertTrue(self.short_acct_id_role in exc.msg)
+        self.assertTrue(self.short_acct_id_role in exc.exception.args[0])
 
     def test_get_account_id_from_role_different(self):
         with self.assertRaises(Exception) as exc:
             utils.get_account_id_from_role(self.different_ids_role)
-        self.assertTrue(self.different_ids_role in exc.msg)
+        self.assertTrue(self.different_ids_role in exc.exception.args[0])
