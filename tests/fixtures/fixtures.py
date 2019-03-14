@@ -1,4 +1,11 @@
+import os
 import base64
+
+
+class MockResponse(object):
+    def ___init__(self):
+        pass
+
 
 full_attributes = [
     'arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS',
@@ -163,4 +170,62 @@ account_map = {
     '000000000000': 'AccountOne',
     '000000000001': 'AccountTwo',
     '000000000002': 'AccountThree',
+    '000000000003': '',
 }
+
+
+def generate_account_list_page():
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(curr_dir, 'html/account_list.html')) as f:
+        account_list_template = f.read()
+
+    with open(os.path.join(curr_dir, 'html/saml_account.html')) as f:
+        saml_account_template = f.read()
+
+    with open(os.path.join(curr_dir, 'html/saml_role.html')) as f:
+        saml_role_template = f.read()
+
+    account_list_data = {
+        '000000000000': {
+            'name': 'AccountOne',
+            'roles': [
+                'arn:aws:iam::000000000000:role/ADFS-0a',
+                'arn:aws:iam::000000000000:role/ADFS-0b'
+            ]
+        },
+        '000000000001': {
+            'name': 'AccountTwo',
+            'roles': [
+                'arn:aws:iam::000000000001:role/ADFS-1a',
+                'arn:aws:iam::000000000001:role/ADFS-1b'
+            ]
+        },
+        '000000000002': {
+            'name': 'AccountThree',
+            'roles': [
+                'arn:aws:iam::000000000002:role/ADFS-2a',
+                'arn:aws:iam::000000000002:role/ADFS-2b'
+            ]
+        },
+        '000000000003': {
+            'name': '',
+            'roles': [
+                'arn:aws:iam::000000000002:role/ADFS-3a',
+                'arn:aws:iam::000000000002:role/ADFS-3b'
+            ]
+        }
+    }
+
+    saml_accounts = ""
+    for i, (k, v) in enumerate(account_list_data.items()):
+        roles = ""
+        for role in v['roles']:
+            roles += saml_role_template.format(role_arn=role, role_name=role.split('/')[1])
+        saml_account = saml_account_template.format(
+            account_index=i, account_name=v['name'],
+            account_id=k, saml_roles=roles
+        )
+        saml_accounts += saml_account
+    account_list = account_list_template.format(assertion=assertion, saml_accounts=saml_accounts)
+
+    return account_list

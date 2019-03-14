@@ -1,6 +1,8 @@
 from datetime import datetime
 from unittest import TestCase
 
+from bs4 import BeautifulSoup
+
 from sts_auth import utils
 from .fixtures import fixtures
 
@@ -102,3 +104,15 @@ class TestToFromEpoch(TestCase):
         epoch = utils.to_epoch(self.now)
         dt = utils.from_epoch(epoch)
         self.assertEqual(self.now, dt)
+
+
+class TestParseAwsAccountNamesFromResponse(TestCase):
+
+    def setUp(self):
+        self.response = fixtures.MockResponse()
+        account_list_page = fixtures.generate_account_list_page()
+        self.response.soup = BeautifulSoup(account_list_page, "lxml")
+
+    def test_parse_aws_account_names_from_response(self):
+        account_map = utils.parse_aws_account_names_from_response(self.response)
+        self.assertDictEqual(account_map, fixtures.account_map)
