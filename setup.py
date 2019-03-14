@@ -17,7 +17,7 @@ tests_require = get_requirements('test')
 
 setup(
     name='stsauth',
-    version='0.3.8',
+    version='0.3.9',
     author='Scott Hamrick',
     author_email='scott@scotthamrick.com',
     description='CLI tool for fetching AWS tokens.',

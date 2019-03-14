@@ -1,14 +1,12 @@
 import os
 import re
 import sys
-import time
+import configparser
 from datetime import datetime
 
 import boto3
 import click
 import requests
-import pyotp
-import configparser
 from requests_ntlm import HttpNtlmAuth
 from bs4 import BeautifulSoup
 
@@ -22,7 +20,7 @@ except ImportError:
     from urlparse import urlparse, urlunparse
 
 
-class STSAuth:
+class STSAuth(object):
     """Initializes an STS Authenticator.
 
     :param username: Username to authenticate with (required).
@@ -146,11 +144,10 @@ class STSAuth:
         okta_login = response.soup.find(id='okta-login-container')
 
         if okta_login:
-            state_token = utils.get_state_token_from_response(response)
+            state_token = utils.get_state_token_from_response(response.text)
             if state_token is None:
                 click.secho('No State Token found in response. Exiting...', fg='red')
                 sys.exit(1)
-            logger.debug('Found state_token: {}'.format(state_token))
             okta_client = Okta(
                 session=self.session,
                 state_token=state_token,

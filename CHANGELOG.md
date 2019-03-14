@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.9
+
+- [bugfix] Fix issue where AWS accounts without aliases could not be parsed.
+- [bugfix] Fix conversion between seconds since epoch and timestamp
+- [improvement] Add test coverage for utils module.
+
 ## v0.3.8
 
 - [feature] Add ability to query a specific field under the `stsauth profiles` command
