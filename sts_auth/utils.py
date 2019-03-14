@@ -26,8 +26,7 @@ def parse_aws_account_names_from_response(response):
     for _acct in acct_list:
         acct_id = ""
         acct_name = ""
-        acct = _acct.contents[0]
-        acct_info = acct.split(' ')
+        acct_info = _acct.text.split(' ')
         acct_info.remove('Account:')
         for _attr in acct_info:
             if is_valid_account_id(_attr.strip('()')):
