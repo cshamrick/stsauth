@@ -221,9 +221,10 @@ def generate_account_list_page():
         roles = ""
         for role in v['roles']:
             roles += saml_role_template.format(role_arn=role, role_name=role.split('/')[1])
+        account_name = (v['name'] + ' ') if v['name'] else v['name']
+        account_title = 'Account: {account_name}{account_id}'.format(account_name=account_name, account_id=k)
         saml_account = saml_account_template.format(
-            account_index=i, account_name=v['name'],
-            account_id=k, saml_roles=roles
+            account_index=i, account_title=account_title, saml_roles=roles
         )
         saml_accounts += saml_account
     account_list = account_list_template.format(assertion=assertion, saml_accounts=saml_accounts)
