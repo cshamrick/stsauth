@@ -13,18 +13,35 @@ def get_state_token_from_response(response_text):
     state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response_text)
     group_len = 0 if state_token_search is None else len(state_token_search.groups())
     if group_len == 1:
-        return state_token_search.group(1)
+        state_token = state_token_search.group(1)
+        logger.debug('Found state_token: {}'.format(state_token))
+        return state_token
     return None
 
 
 def parse_aws_account_names_from_response(response):
     acct_map = {}
-    for _acct in response.soup.find_all('div', {'class': 'saml-account-name'}):
+    acct_list = response.soup.find_all('div', class_='saml-account-name')
+    logger.debug('Account List:\n' + str(acct_list))
+    for _acct in acct_list:
+        acct_id = ""
+        acct_name = ""
         acct = _acct.contents[0]
-        acct_id = acct.split(' ')[2].strip('()')
-        acct_name = acct.split(' ')[1]
+        acct_info = acct.split(' ')
+        acct_info.remove('Account:')
+        for _attr in acct_info:
+            if is_valid_account_id(_attr.strip('()')):
+                acct_id = _attr.strip('()')
+            else:
+                acct_name = _attr
         acct_map[acct_id] = acct_name
     return acct_map
+
+
+def is_valid_account_id(acct_id):
+    acct_regex = re.compile(r'^\d{12}$')
+    acct_match = re.match(acct_regex, acct_id)
+    return acct_match is not None
 
 
 def format_roles_for_display(attrs, account_map):

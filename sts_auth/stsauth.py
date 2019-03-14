@@ -144,11 +144,10 @@ class STSAuth(object):
         okta_login = response.soup.find(id='okta-login-container')
 
         if okta_login:
-            state_token = utils.get_state_token_from_response(response)
+            state_token = utils.get_state_token_from_response(response.text)
             if state_token is None:
                 click.secho('No State Token found in response. Exiting...', fg='red')
                 sys.exit(1)
-            logger.debug('Found state_token: {}'.format(state_token))
             okta_client = Okta(
                 session=self.session,
                 state_token=state_token,
