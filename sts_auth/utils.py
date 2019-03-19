@@ -21,6 +21,8 @@ def get_state_token_from_response(response_text):
 
 def parse_aws_account_names_from_response(response):
     acct_map = {}
+    if response is None:
+        return acct_map
     acct_list = response.soup.find_all('div', class_='saml-account-name')
     logger.debug('Account List:\n' + str(acct_list))
     for _acct in acct_list:
