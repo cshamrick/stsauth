@@ -285,8 +285,13 @@ class STSAuth(object):
         headers = {'Referer': response.url, 'Content-Type': 'application/x-www-form-urlencoded'}
         selectors = ",".join("{}[name]".format(i) for i in ("input", "button", "textarea", "select"))
         data = [(tag.get('name'), tag.get('value')) for tag in hiddenform.select(selectors)]
-
-        adfs_response = self.session.post(hiddenform.attrs.get('action'), data=data, headers=headers)
+        url = hiddenform.attrs.get('action')
+        try:
+            adfs_response = self.session.post(url, data=data, headers=headers, timeout=5)
+        except requests.exceptions.ConnectionError as e:
+            msg_fmt = 'Could not fetch account aliases from {} due to an exception:\n {}'
+            click.secho(msg_fmt.format(url, str(e)), fg='red')
+            return None
         adfs_response.soup = BeautifulSoup(adfs_response.text, "lxml")
 
         return adfs_response

@@ -275,7 +275,7 @@ def prompt_for_role(account_map, account_roles):
     """
     click.secho('Please choose the role you would like to assume:', fg='green')
     for acct_id, roles in account_roles.items():
-        acct_name = account_map[acct_id]
+        acct_name = account_map.get(acct_id, '')
         click.secho('Account: {} ({})'.format(acct_name, acct_id), fg='blue')
         for role in roles:
             click.secho('[{num}]: {label}'.format(**role))
