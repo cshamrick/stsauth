@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest import TestCase
 
+import configparser
 from bs4 import BeautifulSoup
 
 from sts_auth import utils
@@ -116,3 +117,33 @@ class TestParseAwsAccountNamesFromResponse(TestCase):
     def test_parse_aws_account_names_from_response(self):
         account_map = utils.parse_aws_account_names_from_response(self.response)
         self.assertDictEqual(account_map, fixtures.account_map)
+
+
+class TestIsProfileActive(TestCase):
+
+    def setUp(self):
+        self.config = configparser.RawConfigParser()
+        self.config.read_dict(fixtures.aws_credentials_conf)
+        print(dict(self.config.items()))
+        self.account = self.config.sections()[1]
+
+    def test_no_profile_in_config(self):
+        is_active = utils.is_profile_active(self.config, 'does_not_exist')
+        self.assertFalse(is_active)
+
+    def test_profile_has_no_expiry(self):
+        self.config.remove_option(self.account, 'aws_credentials_expiry')
+        is_active = utils.is_profile_active(self.config, self.account)
+        self.assertTrue(is_active)
+
+    def test_profile_has_is_expired(self):
+        past = utils.to_epoch(datetime.utcnow() + timedelta(-1))
+        self.config.set(self.account, 'aws_credentials_expiry', past)
+        is_active = utils.is_profile_active(self.config, self.account)
+        self.assertFalse(is_active)
+
+    def test_profile_has_is_not_expired(self):
+        future = utils.to_epoch(datetime.utcnow() + timedelta(1))
+        self.config.set(self.account, 'aws_credentials_expiry', future)
+        is_active = utils.is_profile_active(self.config, self.account)
+        self.assertTrue(is_active)

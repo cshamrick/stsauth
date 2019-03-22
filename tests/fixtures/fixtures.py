@@ -230,3 +230,25 @@ def generate_account_list_page():
     account_list = account_list_template.format(assertion=assertion, saml_accounts=saml_accounts)
 
     return account_list
+
+
+aws_credentials_conf = {
+    'default': {
+        'output': 'json',
+        'region': 'us-east-1',
+        'idpentryurl': 'https://my.portal.com/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices',
+        'domain': 'MYADDOMAIN',
+        'okta_org': 'my-organization',
+        'okta_shared_secret': '16CHARLONGSTRING',
+        'aws_access_key_id': 'awsaccesskeyidstringexample',
+        'aws_secret_access_key': 'awssecretaccesskeystringexample',
+    },
+    '000000000000 - ADFS - Account1': {
+        'output': 'json',
+        'region': 'us - east - 1',
+        'aws_access_key_id': 'awsaccesskeyidstringexample',
+        'aws_secret_access_key': 'awssecretaccesskeystringexample',
+        'aws_session_token': 'awssessiontoken',
+        'aws_credentials_expiry': '1547158293.0',
+    }
+}
