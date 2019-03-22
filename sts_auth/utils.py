@@ -174,3 +174,12 @@ def unset_proxy():
         if var in os.environ:
             logger.debug('Unsetting {!r} environment variable!'.format(var))
             del os.environ[var]
+
+
+def is_profile_active(config, profile):
+    if config.has_section(profile):
+        expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+        active = from_epoch(expiry) > datetime.utcnow() if expiry else True
+        return active
+    else:
+        return False
