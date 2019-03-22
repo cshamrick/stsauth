@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.11
+
+- [bugfix] Fix local calculation of credentials `expiry`.
+
 ## v0.3.10
 
 - [bugfix] Allow stsauth to continue without connectivity to `signin.aws.amazon.com` for Account Aliases
