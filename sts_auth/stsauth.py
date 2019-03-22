@@ -85,12 +85,7 @@ class STSAuth(object):
 
     @property
     def credentials_expired(self):
-        if self.config.has_section(self.profile):
-            expiry = self.config.get(self.profile, 'aws_credentials_expiry', fallback=None)
-            if expiry:
-                return utils.from_epoch(expiry) <= datetime.now()
-        else:
-            return True
+        return not utils.is_profile_active(self.config, self.profile)
 
     def parse_config_file(self):
         """Read configuration file and only set values if they

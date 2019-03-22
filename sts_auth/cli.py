@@ -3,7 +3,6 @@
 import os
 import re
 import sys
-from datetime import datetime
 
 import click
 import click_log
@@ -174,17 +173,14 @@ def fetch_profiles_from_config(config):
     accounts = []
 
     for profile in profiles:
-        profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-        profile_expiry_string = 'No Expiry Set'
-        is_active = True
-
-        if profile_expiry:
-            profile_expiry_string = str(utils.from_epoch(profile_expiry))
-            is_active = utils.from_epoch(profile_expiry) > datetime.now()
-
         account = config.get(profile, 'account', fallback='None')
         accounts.append(account)
+
+        profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
+        profile_expiry_string = str(utils.from_epoch(profile_expiry)) if profile_expiry else 'No Expiry Set'
         expiry.append(profile_expiry_string)
+
+        is_active = utils.is_profile_active(config, profile)
         statuses.append('Active' if is_active else 'Expired')
 
     return [accounts, profiles, expiry, statuses]
@@ -236,10 +232,8 @@ def print_profile(config, profile):
             v = '{} ({})'.format(v, str(utils.from_epoch(v)))
         click.secho(v, fg='green')
 
-    profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-    is_active = utils.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
     click.secho('status=', fg='blue', nl=False)
-    if is_active:
+    if utils.is_profile_active(config, profile):
         click.secho('active', fg='green')
     else:
         click.secho('expired', fg='red')
@@ -247,8 +241,7 @@ def print_profile(config, profile):
 
 def fetch_profile_attribute(config, profile, query):
     profile_attributes = dict(config.items(profile))
-    profile_expiry = config.get(profile, 'aws_credentials_expiry', fallback=None)
-    is_active = utils.from_epoch(profile_expiry) > datetime.now() if profile_expiry else True
+    is_active = utils.is_profile_active(config, profile)
     profile_attributes['status'] = 'active' if is_active else 'expired'
     attribute_value = profile_attributes.get(query)
 
