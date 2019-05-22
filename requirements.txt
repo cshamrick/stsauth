@@ -8,3 +8,4 @@ requests <3
 requests_ntlm <2
 lxml <5
 pyotp <3
+urllib3<1.25,>=1.20
