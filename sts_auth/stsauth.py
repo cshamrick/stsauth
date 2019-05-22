@@ -239,7 +239,7 @@ class STSAuth(object):
         )
         return token
 
-    def write_to_configuration_file(self, token, account_name, profile=None):
+    def write_to_configuration_file(self, token, account_name, account_id, profile=None):
         """Store credentials in a specific profile.
 
         Takes the credentials and details from the token provided and writes them out to a
@@ -265,10 +265,13 @@ class STSAuth(object):
         expiration = utils.to_epoch(credentials.get('Expiration', ''))
         self.config.set(profile, 'output', self.output)
         self.config.set(profile, 'region', self.region)
-        self.config.set(profile, 'account', account_name)
-        self.config.set(profile, 'aws_access_key_id', credentials.get('AccessKeyId', ''))
-        self.config.set(profile, 'aws_secret_access_key', credentials.get('SecretAccessKey', ''))
-        self.config.set(profile, 'aws_session_token', credentials.get('SessionToken', ''))
+        if account_name != '':
+            self.config.set(profile, 'account_name', account_name)
+        if account_id != '':
+            self.config.set(profile, 'account_id', account_id)
+        self.config.set(profile, 'aws_access_key_id', credentials.get('AccessKeyId', 'None'))
+        self.config.set(profile, 'aws_secret_access_key', credentials.get('SecretAccessKey', 'None'))
+        self.config.set(profile, 'aws_session_token', credentials.get('SessionToken', 'None'))
         self.config.set(profile, 'aws_credentials_expiry', expiration)
 
         # Write the AWS STS token into the AWS credential file
@@ -284,7 +287,7 @@ class STSAuth(object):
         try:
             adfs_response = self.session.post(url, data=data, headers=headers, timeout=5)
         except requests.exceptions.ConnectionError as e:
-            msg_fmt = 'Could not fetch account aliases from {} due to an exception:\n {}'
+            msg_fmt = 'Could not fetch account aliases from {} due to an exception. Using cached values!\n {}'
             click.secho(msg_fmt.format(url, str(e)), fg='red')
             return None
         adfs_response.soup = BeautifulSoup(adfs_response.text, "lxml")
