@@ -9,6 +9,7 @@ import click
 import requests
 from requests_ntlm import HttpNtlmAuth
 from bs4 import BeautifulSoup
+from botocore.exceptions import ProfileNotFound
 
 from sts_auth import utils
 from sts_auth.okta import Okta
@@ -227,9 +228,12 @@ class STSAuth(object):
         """
         try:
             sts = boto3.client('sts')
-        except Exception:
+        except ProfileNotFound as e:
+            click.secho(e.response['Error']['Message'], fg='red')
+            sys.exit(1)
+        except Exception as e:
             # TODO: Proper exception and message
-            raise
+            raise e
 
         token = sts.assume_role_with_saml(
             RoleArn=role_arn,
