@@ -3,7 +3,7 @@ import re
 import base64
 import logging
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from xml.etree import ElementTree
 
 logger = logging.getLogger(__name__)
@@ -64,9 +64,11 @@ def format_roles_for_display(attrs, account_map):
         item = {'label': role_name, 'attr': attr, 'id': acct_id, 'name': acct_name}
         accts.append(item)
     sorted_acct_roles = [k for k in sorted(accts, key=lambda k: k['id'])]
-    account_roles = defaultdict(list)
+    account_roles = OrderedDict()
     for i, v in enumerate(sorted_acct_roles):
         v['num'] = i
+        if v['id'] not in account_roles:
+            account_roles[v['id']] = []
         account_roles[v['id']].append(v)
     return account_roles
 
