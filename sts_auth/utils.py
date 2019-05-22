@@ -3,7 +3,7 @@ import re
 import base64
 import logging
 from datetime import datetime
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from xml.etree import ElementTree
 
 logger = logging.getLogger(__name__)
