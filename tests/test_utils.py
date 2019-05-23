@@ -118,13 +118,29 @@ class TestParseAwsAccountNamesFromResponse(TestCase):
         account_map = utils.parse_aws_account_names_from_response(self.response)
         self.assertDictEqual(account_map, fixtures.account_map)
 
+    def test_parse_aws_account_names_from_response_when_none(self):
+        account_map = utils.parse_aws_account_names_from_response(None)
+        self.assertDictEqual(account_map, {})
+
+
+class TestParseAwsAccountNamesFromConfig(TestCase):
+
+    def setUp(self):
+        self.config = configparser.RawConfigParser()
+        self.config.read_dict(fixtures.aws_credentials_conf)
+        self.account_map = {v.get('account_id', ''): v.get('account_name', '')
+                            for _, v in fixtures.aws_credentials_conf.items()}
+
+    def test_parse_aws_account_names_from_config(self):
+        account_map = utils.parse_aws_account_names_from_config(self.config)
+        self.assertDictEqual(account_map, self.account_map)
+
 
 class TestIsProfileActive(TestCase):
 
     def setUp(self):
         self.config = configparser.RawConfigParser()
         self.config.read_dict(fixtures.aws_credentials_conf)
-        print(dict(self.config.items()))
         self.account = self.config.sections()[1]
 
     def test_no_profile_in_config(self):

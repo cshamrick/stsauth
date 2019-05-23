@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.4.0
+
+- [feature] Open the AWS Console with the profile authenticated against by using
+  the `--console` flag in the `authenticate` command
+
 ## v0.3.12
 
 - [bugfix] Fix out of order roles in selection prompt.
