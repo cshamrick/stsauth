@@ -44,7 +44,7 @@ def cli():
                   'Proceed with caution and use a tool like `pass` to securely store your secrets.'
               )
               )
-@click.option('--console', '-c', is_flag=True,
+@click.option('--browser', '-b', is_flag=True,
               help=(
                   'If set, will attempt to open the console in your default browser.'
                   'To enable opening the console in an incognito window, set `browser_path`'
@@ -55,7 +55,7 @@ def cli():
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, okta_org,
-                 okta_shared_secret, console, region, output, force):
+                 okta_shared_secret, browser, region, output, force):
 
     sts_auth = STSAuth(
         username=username,
@@ -140,7 +140,7 @@ def authenticate(username, password, idpentryurl, domain,
                 role=role_for_section)
     )
     click.secho(msg, fg='green')
-    if console:
+    if browser:
         login_url = sts_auth.generate_login_url(token)
         browser_path = sts_auth.config.get('default', 'browser_path', fallback=None)
         open_console(login_url, browser_path)
