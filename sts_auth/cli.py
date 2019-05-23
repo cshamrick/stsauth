@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import webbrowser
 
 import click
 import click_log
@@ -23,7 +24,7 @@ def cli():
 
 
 @cli.command()
-@click.option('--username', '-u', help='IdP endpoint username.', prompt=True)
+@click.option('--username', '-u', prompt=True, help='IdP endpoint username.')
 @click.option('--password', '-p', prompt=True, hide_input=True,
               confirmation_prompt=False, help='Program will prompt for input if not provided.')
 @click.option('--idpentryurl', '-i', default=None,
@@ -31,7 +32,7 @@ def cli():
 @click.option('--domain', '-d', help='The active directory domain.')
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
-@click.option('--profile', '-l', help='Name of config profile.', default=None)
+@click.option('--profile', '-l', default=None, help='Name of config profile.')
 @click.option('--region', '-r', default=None, help='The AWS region to use. ex: us-east-1')
 @click.option('--okta-org', '-k', default=None, help='The Okta organization to use. ex: my-organization')
 @click.option('--okta-shared-secret', '-s', default=None,
@@ -43,11 +44,18 @@ def cli():
                   'Proceed with caution and use a tool like `pass` to securely store your secrets.'
               )
               )
+@click.option('--console', '-c', is_flag=True,
+              help=(
+                  'If set, will attempt to open the console in your default browser.'
+                  'To enable opening the console in an incognito window, set `browser_path`'
+                  'in your config file `default` section to your browser executable.'
+              )
+              )
 @click.option('--output', '-o', default=None, type=click.Choice(['json', 'text', 'table']))
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, okta_org,
-                 okta_shared_secret, region, output, force):
+                 okta_shared_secret, console, region, output, force):
 
     sts_auth = STSAuth(
         username=username,
@@ -95,8 +103,6 @@ def authenticate(username, password, idpentryurl, domain,
         click.secho('No roles are available. Please verify in the ADFS Portal.', fg='red')
 
     role_arn, principal_arn = role.get('attr').split(',')
-    acct_name = role.get('name', '')
-    acct_id = role.get('id', '')
     # Generate a safe-name for the profile based on acct no. and role
     role_for_section = parse_role_for_profile(role_arn)
 
@@ -111,6 +117,8 @@ def authenticate(username, password, idpentryurl, domain,
     token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion)
 
     # Put the credentials into a role specific section
+    acct_name = role.get('name', '')
+    acct_id = role.get('id', '')
     sts_auth.write_to_configuration_file(token, acct_name, acct_id, role_for_section)
 
     # Give the user some basic info as to what has just happened
@@ -132,6 +140,40 @@ def authenticate(username, password, idpentryurl, domain,
                 role=role_for_section)
     )
     click.secho(msg, fg='green')
+    if console:
+        login_url = sts_auth.generate_login_url(token)
+        browser_path = sts_auth.config.get('default', 'browser_path', fallback=None)
+        open_console(login_url, browser_path)
+
+
+def open_console(login_url, browser_path=None):
+    msg = 'Attempting to open the AWS Console...'
+    click.secho(msg, fg='green')
+    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window'}
+    if browser_path is not None:
+        if not os.path.exists(browser_path):
+            msg = (
+                'Path to browser executable is not valid. Private browsing '
+                'not possible.\nAttempting to continue with your default '
+                'browser...'
+            )
+            click.secho(msg, fg='red')
+        else:
+            if 'chrome' in browser_path.lower():
+                browser_type = 'chrome'
+            elif 'firefox' in browser_path.lower():
+                browser_type = 'firefox'
+            else:
+                msg = 'Currently private browsing is only supported for Chrome and Firefox.'
+            private_flag = private_flags.get(browser_type, '')
+            nohup = '&' if browser_type == 'firefox' else ''
+            browser_path = '"{}"{} %s {}'.format(browser_path, private_flag, nohup)
+    browser = webbrowser.get(browser_path)
+    try:
+        browser.open_new_tab(login_url)
+    except webbrowser.Error as e:
+        msg = 'An exception occured while trying to open the AWS Console.'
+        click.secho('{}\n{}'.format(msg, str(e)), fg='red')
 
 
 @cli.command()
