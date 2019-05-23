@@ -185,7 +185,7 @@ def profiles(credentialsfile, profile, query):
 def open_console(login_url, browser_path=None):
     msg = 'Attempting to open the AWS Console...'
     click.secho(msg, fg='green')
-    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window'}
+    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window', 'brave':' --incognito'}
     if browser_path is not None:
         if not os.path.exists(browser_path):
             msg = (
@@ -199,8 +199,12 @@ def open_console(login_url, browser_path=None):
                 browser_type = 'chrome'
             elif 'firefox' in browser_path.lower():
                 browser_type = 'firefox'
+            elif 'brave' in browser_path.lower():
+                browser_type = 'brave'
             else:
-                msg = 'Currently private browsing is only supported for Chrome and Firefox.'
+                browser_type = 'unsupported'
+                msg = 'Currently private browsing is only supported for Chrome, Firefox, and Brave.'
+                click.secho(msg, fg='yellow')
             private_flag = private_flags.get(browser_type, '')
             nohup = '&' if browser_type == 'firefox' else ''
             browser_path = '"{}"{} %s {}'.format(browser_path, private_flag, nohup)
