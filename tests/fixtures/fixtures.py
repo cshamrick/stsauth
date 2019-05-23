@@ -250,5 +250,7 @@ aws_credentials_conf = {
         'aws_secret_access_key': 'awssecretaccesskeystringexample',
         'aws_session_token': 'awssessiontoken',
         'aws_credentials_expiry': '1547158293.0',
+        'account_name': 'test',
+        'account_id': '000000000000'
     }
 }

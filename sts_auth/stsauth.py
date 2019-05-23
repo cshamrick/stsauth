@@ -297,3 +297,29 @@ class STSAuth(object):
         adfs_response.soup = BeautifulSoup(adfs_response.text, "lxml")
 
         return adfs_response
+
+    def generate_login_url(self, token):
+        federation_base_url = 'https://signin.aws.amazon.com/federation'
+        request_params = {
+            "Action": "getSigninToken",
+            "SessionDuration": "43200",
+            "Session": str({
+                "sessionId": token['Credentials']['AccessKeyId'],
+                "sessionKey": token['Credentials']['SecretAccessKey'],
+                "sessionToken": token['Credentials']['SessionToken']
+            })
+        }
+        r = self.session.get(federation_base_url, params=request_params)
+        signin_token = r.json()
+
+        login_params = {
+            "Action": "login",
+            "Destination": "https://console.aws.amazon.com/",
+            "SigninToken": signin_token["SigninToken"]
+        }
+        request_parameters = requests.compat.urlencode(login_params)
+        request_url = "{base_url}?{request_parameters}".format(
+            base_url=federation_base_url,
+            request_parameters=request_parameters
+        )
+        return request_url
