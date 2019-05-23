@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.4.1
+- [bugfix] Fix error when users have unsupported browser
+- [improvement] Add support for Brave Browser
+
 ## v0.4.0
 
 - [feature] Open the AWS Console with the profile authenticated against by using
