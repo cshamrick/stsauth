@@ -203,7 +203,7 @@ def open_console(login_url, browser_path=None):
                 browser_type = 'brave'
             else:
                 browser_type = 'unsupported'
-                msg = 'Currently private browsing is only supported for Chrome and Firefox.'
+                msg = 'Currently private browsing is only supported for Chrome, Firefox, and Brave.'
                 click.secho(msg, fg='yellow')
             private_flag = private_flags.get(browser_type, '')
             nohup = '&' if browser_type == 'firefox' else ''
