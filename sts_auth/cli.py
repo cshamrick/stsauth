@@ -146,36 +146,6 @@ def authenticate(username, password, idpentryurl, domain,
         open_console(login_url, browser_path)
 
 
-def open_console(login_url, browser_path=None):
-    msg = 'Attempting to open the AWS Console...'
-    click.secho(msg, fg='green')
-    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window'}
-    if browser_path is not None:
-        if not os.path.exists(browser_path):
-            msg = (
-                'Path to browser executable is not valid. Private browsing '
-                'not possible.\nAttempting to continue with your default '
-                'browser...'
-            )
-            click.secho(msg, fg='red')
-        else:
-            if 'chrome' in browser_path.lower():
-                browser_type = 'chrome'
-            elif 'firefox' in browser_path.lower():
-                browser_type = 'firefox'
-            else:
-                msg = 'Currently private browsing is only supported for Chrome and Firefox.'
-            private_flag = private_flags.get(browser_type, '')
-            nohup = '&' if browser_type == 'firefox' else ''
-            browser_path = '"{}"{} %s {}'.format(browser_path, private_flag, nohup)
-    browser = webbrowser.get(browser_path)
-    try:
-        browser.open_new_tab(login_url)
-    except webbrowser.Error as e:
-        msg = 'An exception occured while trying to open the AWS Console.'
-        click.secho('{}\n{}'.format(msg, str(e)), fg='red')
-
-
 @cli.command()
 @click.option('--credentialsfile', '-c', help='Path to AWS credentials file.',
               default='~/.aws/credentials')
@@ -210,6 +180,36 @@ def profiles(credentialsfile, profile, query):
             msg = "Section '{}' does not exist in {}!"
             click.secho(msg.format(profile, credentialsfile), fg='red')
             sys.exit(1)
+
+
+def open_console(login_url, browser_path=None):
+    msg = 'Attempting to open the AWS Console...'
+    click.secho(msg, fg='green')
+    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window'}
+    if browser_path is not None:
+        if not os.path.exists(browser_path):
+            msg = (
+                'Path to browser executable is not valid. Private browsing '
+                'not possible.\nAttempting to continue with your default '
+                'browser...'
+            )
+            click.secho(msg, fg='red')
+        else:
+            if 'chrome' in browser_path.lower():
+                browser_type = 'chrome'
+            elif 'firefox' in browser_path.lower():
+                browser_type = 'firefox'
+            else:
+                msg = 'Currently private browsing is only supported for Chrome and Firefox.'
+            private_flag = private_flags.get(browser_type, '')
+            nohup = '&' if browser_type == 'firefox' else ''
+            browser_path = '"{}"{} %s {}'.format(browser_path, private_flag, nohup)
+    browser = webbrowser.get(browser_path)
+    try:
+        browser.open_new_tab(login_url)
+    except webbrowser.Error as e:
+        msg = 'An exception occured while trying to open the AWS Console.'
+        click.secho('{}\n{}'.format(msg, str(e)), fg='red')
 
 
 def fetch_profiles_from_config(config):
