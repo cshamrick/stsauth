@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.12
+
+- [bugfix] Fix out of order roles in selection prompt.
+- [bugfix] Fix writing of empty value to credentials file which causes invalid yml.
+- [improvement] Add error handling for fetching TOTP code.
+- [improvement] Add error handling for when AWS ProfileNotFound.
+
 ## v0.3.11
 
 - [bugfix] Fix local calculation of credentials `expiry`.
