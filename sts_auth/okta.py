@@ -118,9 +118,20 @@ class Okta(object):
 
         totp = pyotp.TOTP(self.okta_shared_secret)
         verify_url = factor_details.get('_links', {}).get('verify', {}).get('href')
-        data = {'stateToken': self.state_token, 'passCode': totp.now()}
+        try:
+            pass_code = totp.now()
+        except Exception as e:
+            msg = 'An error occured fetching your TOTP code. Please check your Shared Secret.'
+            click.secho(msg, fg='red')
+            click.secho('Error: {}'.format(str(e)), fg='red')
+            sys.exit(1)
         if verify_url:
-            verify_response = self.session.post(verify_url, json=data)
+            verify_response = self.session.post(
+                verify_url,
+                json={
+                    'stateToken': self.state_token,
+                    'passCode': pass_code
+                })
             if verify_response.ok:
                 status = verify_response.json().get('status')
                 if status == 'SUCCESS':

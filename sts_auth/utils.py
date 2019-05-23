@@ -3,7 +3,7 @@ import re
 import base64
 import logging
 from datetime import datetime
-from collections import defaultdict
+from collections import OrderedDict
 from xml.etree import ElementTree
 
 logger = logging.getLogger(__name__)
@@ -19,15 +19,32 @@ def get_state_token_from_response(response_text):
     return None
 
 
+def parse_aws_account_names_from_config(config):
+    acct_map = {}
+    for item in config.items():
+        section = item[1]
+        acct_id = section.get('account_id', '')
+        # legacy support for `account` key
+        # use `.pop()` to "psuedo-migrate" to the `account_name` key
+        acct_name = section.pop('account', None) or section.get('account_name')
+        acct_name = acct_name if acct_name else ''
+        acct_map[acct_id] = acct_name
+    logger.debug('Account Names: {}'.format(acct_map))
+    return acct_map
+
+
 def parse_aws_account_names_from_response(response):
+    # need to pass in config, set acct_id and acct_name to
+    # current values in config if they exist. This avoids
+    # setting the account name to 'blank' if we can't reach the end point.
     acct_map = {}
     if response is None:
         return acct_map
     acct_list = response.soup.find_all('div', class_='saml-account-name')
     logger.debug('Account List:\n' + str(acct_list))
     for _acct in acct_list:
-        acct_id = ""
-        acct_name = ""
+        acct_id = ''
+        acct_name = ''
         acct_info = _acct.text.split(' ')
         acct_info.remove('Account:')
         for _attr in acct_info:
@@ -36,6 +53,7 @@ def parse_aws_account_names_from_response(response):
             else:
                 acct_name = _attr
         acct_map[acct_id] = acct_name
+    logger.debug('Account Names: {}'.format(acct_map))
     return acct_map
 
 
@@ -64,9 +82,11 @@ def format_roles_for_display(attrs, account_map):
         item = {'label': role_name, 'attr': attr, 'id': acct_id, 'name': acct_name}
         accts.append(item)
     sorted_acct_roles = [k for k in sorted(accts, key=lambda k: k['id'])]
-    account_roles = defaultdict(list)
+    account_roles = OrderedDict()
     for i, v in enumerate(sorted_acct_roles):
         v['num'] = i
+        if v['id'] not in account_roles:
+            account_roles[v['id']] = []
         account_roles[v['id']].append(v)
     return account_roles
 

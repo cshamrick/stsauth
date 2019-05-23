@@ -72,7 +72,10 @@ def authenticate(username, password, idpentryurl, domain,
 
     saml_response = sts_auth.get_saml_response()
     adfs_response = sts_auth.fetch_aws_account_names(saml_response)
-    account_map = utils.parse_aws_account_names_from_response(adfs_response)
+    if adfs_response is not None:
+        account_map = utils.parse_aws_account_names_from_response(adfs_response)
+    else:
+        account_map = utils.parse_aws_account_names_from_config(sts_auth.config)
     # Parse the returned assertion and extract the authorized roles
     awsroles = utils.parse_roles_from_assertion(saml_response.assertion)
     account_roles = utils.format_roles_for_display(awsroles, account_map)
@@ -93,6 +96,7 @@ def authenticate(username, password, idpentryurl, domain,
 
     role_arn, principal_arn = role.get('attr').split(',')
     acct_name = role.get('name', '')
+    acct_id = role.get('id', '')
     # Generate a safe-name for the profile based on acct no. and role
     role_for_section = parse_role_for_profile(role_arn)
 
@@ -107,7 +111,7 @@ def authenticate(username, password, idpentryurl, domain,
     token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion)
 
     # Put the credentials into a role specific section
-    sts_auth.write_to_configuration_file(token, acct_name, role_for_section)
+    sts_auth.write_to_configuration_file(token, acct_name, acct_id, role_for_section)
 
     # Give the user some basic info as to what has just happened
     msg = (
