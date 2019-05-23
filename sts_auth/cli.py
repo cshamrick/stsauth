@@ -44,7 +44,7 @@ def cli():
                   'Proceed with caution and use a tool like `pass` to securely store your secrets.'
               )
               )
-@click.option('--console', '-c', is_flag=True,
+@click.option('--browser', '-b', is_flag=True,
               help=(
                   'If set, will attempt to open the console in your default browser.'
                   'To enable opening the console in an incognito window, set `browser_path`'
