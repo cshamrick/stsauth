@@ -40,7 +40,7 @@ class STSAuth(object):
     def __init__(self, username, password, credentialsfile,
                  idpentryurl=None, profile=None, okta_org=None,
                  okta_shared_secret=None, domain=None, region=None,
-                 output=None, force=False):
+                 output=None, vip_access_security_code=None, force=False):
         self.domain = domain
         self.username = username
         self.password = password
@@ -51,6 +51,7 @@ class STSAuth(object):
         self.output = output
         self.okta_org = okta_org
         self.okta_shared_secret = okta_shared_secret
+        self.vip_access_security_code = vip_access_security_code
         self.session = requests.Session()
 
         self.session.headers.update({'content-type': 'application/json'})
@@ -179,6 +180,8 @@ class STSAuth(object):
                 payload[name] = self.domain_user
             elif "pass" in name.lower():
                 payload[name] = self.password
+            elif "security_code" in name.lower():
+                payload[name] = self.vip_access_security_code
             else:
                 payload[name] = value
 
