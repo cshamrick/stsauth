@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import webbrowser
+import collections
 
 import click
 import click_log
@@ -44,6 +45,7 @@ def cli():
                   'Proceed with caution and use a tool like `pass` to securely store your secrets.'
               )
               )
+@click.option('--vip-access-security-code', '-t', default=None, help='VIP Access security code.')
 @click.option('--browser', '-b', is_flag=True,
               help=(
                   'If set, will attempt to open the console in your default browser.'
@@ -55,7 +57,7 @@ def cli():
 @click.option('--force', '-f', is_flag=True, help='Auto-accept confirmation prompts.')
 def authenticate(username, password, idpentryurl, domain,
                  credentialsfile, profile, okta_org,
-                 okta_shared_secret, browser, region, output, force):
+                 okta_shared_secret, vip_access_security_code, browser, region, output, force):
 
     sts_auth = STSAuth(
         username=username,
@@ -65,6 +67,7 @@ def authenticate(username, password, idpentryurl, domain,
         profile=profile,
         okta_org=okta_org,
         okta_shared_secret=okta_shared_secret,
+        vip_access_security_code=vip_access_security_code,
         domain=domain,
         region=region,
         output=output
@@ -98,7 +101,10 @@ def authenticate(username, password, idpentryurl, domain,
         role = prompt_for_role(account_map, account_roles)
     elif account_roles_len == 1 and account_roles_vals_len == 1:
         # If there is one account and only one role, use it
-        role = account_roles.values()[0][0]
+        if isinstance(account_roles, collections.OrderedDict):
+            role = account_roles.get(list(account_roles.keys())[0])[0]
+        else:
+            role = account_roles.values()[0][0]
     else:
         click.secho('No roles are available. Please verify in the ADFS Portal.', fg='red')
 

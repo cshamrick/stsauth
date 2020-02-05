@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.5.0
+- [feature] Added VIP Access support. Users can now pass VIP Access security codes to `authenticate` command via the
+`--vip-access-security-code` flag.
+
 ## v0.4.1
 - [bugfix] Fix error when users have unsupported browser
 - [improvement] Add support for Brave Browser
