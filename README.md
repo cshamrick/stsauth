@@ -82,6 +82,13 @@ Options:
                                   expose your Shared Secret. Proceed with
                                   caution and use a tool like `pass` to
                                   securely store your secrets.
+  -t, --vip-access-security-code TEXT
+                                  VIP Access security code.
+  -b, --browser                   If set, will attempt to open the console in
+                                  your default browser.To enable opening the
+                                  console in an incognito window, set
+                                  `browser_path`in your config file `default`
+                                  section to your browser executable.
   -o, --output [json|text|table]
   -f, --force                     Auto-accept confirmation prompts.
   --help                          Show this message and exit.
