@@ -233,12 +233,12 @@ class STSAuth(object):
             session = boto3.Session(profile_name=aws_profile)
             sts = session.client('sts')
         except ProfileNotFound as e:
-            # click.secho(e.response['Error']['Message'], fg='red')
             click.secho(str(e), fg='red')
             sys.exit(1)
         except Exception as e:
             # TODO: Proper exception and message
             raise e
+        
         token = sts.assume_role_with_saml(
             RoleArn=role_arn,
             PrincipalArn=principal_arn,
