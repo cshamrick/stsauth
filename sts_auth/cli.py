@@ -117,10 +117,16 @@ def authenticate(username, password, idpentryurl, domain,
     if not profile and not sts_auth.credentials_expired and not force:
         prompt_for_unexpired_credentials(sts_auth.profile)
 
+    if not sts_auth.config.has_section(profile):
+        sts_auth.config.add_section(profile)
+
+    with open(sts_auth.credentialsfile, 'w') as f:
+        sts_auth.config.write(f)
+
     click.secho("\nRequesting credentials for role: " + role_arn, fg='green')
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
-    token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion)
+    token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion, aws_profile=profile)
 
     # Put the credentials into a role specific section
     acct_name = role.get('name', '')
