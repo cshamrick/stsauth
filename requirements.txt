@@ -1,8 +1,8 @@
 awscli <2
 boto3 <2
 beautifulsoup4 <5
-Click ==7
-click-log ==0.3.2
+Click <8
+click-log <0.4
 configparser <4
 requests <3
 requests_ntlm <2
