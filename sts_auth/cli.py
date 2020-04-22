@@ -118,7 +118,8 @@ def authenticate(username, password, idpentryurl, domain,
         prompt_for_unexpired_credentials(sts_auth.profile)
 
     if not sts_auth.config.has_section(profile):
-        sts_auth.config.add_section(profile)
+        if profile != None:
+            sts_auth.config.add_section(profile)
 
     with open(sts_auth.credentialsfile, 'w') as f:
         sts_auth.config.write(f)
