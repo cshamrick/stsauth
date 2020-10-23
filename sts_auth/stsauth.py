@@ -217,12 +217,16 @@ class STSAuth(object):
             verify=True
         )
         login_response_page = BeautifulSoup(login_response.text, "html.parser")
+        # Checks for errorText id on page to indicate any errors
         login_error_message = login_response_page.find(id='errorText')
-        if login_error_message and len(login_error_message.string) > 0:
+        # Checks for specific text in a paragraph element to indicate any errors
+        vip_login_error_message = login_response_page.find(lambda tag:tag.name=="p" and "Authentication failed" in tag.text)
+        if (login_error_message and len(login_error_message.string) > 0) or (vip_login_error_message and len(vip_login_error_message) > 0):
             msg = ('Login page returned the following message. '
                    'Please resolve this issue before continuing:')
             click.secho(msg, fg='red')
-            click.secho(login_error_message.string, fg='red')
+            error_msg = login_error_message if login_error_message else vip_login_error_message
+            click.secho(error_msg.string, fg='red')
             sys.exit(1)
         return login_response
 
