@@ -117,7 +117,7 @@ def authenticate(username, password, idpentryurl, domain,
     if not profile and not sts_auth.credentials_expired and not force:
         prompt_for_unexpired_credentials(sts_auth.profile)
 
-    if not sts_auth.config.has_section(profile):
+    if not sts_auth.config.has_section(profile) and profile is not None:
         sts_auth.config.add_section(profile)
 
     with open(sts_auth.credentialsfile, 'w') as f:
