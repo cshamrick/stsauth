@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.5.3
+
+- [bugfix] Fix issue where a `[None]` section would be added to credentials file.
+- [bugfix] Fix issue where some error messages on the ADFS portal would not be captured.
+- [other] Removes restraints on `urllib3` dependency for new Python versions
+
 ## v0.5.1
 
 - [bugfix] Fix issue where using `--profile`/`-l` flag would fail if the profile didn't exist in credentials file.
@@ -9,7 +15,7 @@ All notable changes to this project will be documented in this file.
 ## v0.5.0
 
 - [feature] Added VIP Access support. Users can now pass VIP Access security codes to `authenticate` command via the
-`--vip-access-security-code` flag.
+  `--vip-access-security-code` flag.
 
 ## v0.4.1
 
