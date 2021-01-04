@@ -11,7 +11,13 @@ This method of authentication is preferred because it eliminates the need for lo
 1. Must already have access to an AWS account console.
 
 ## Install
+### Docker
+Add the following alias to your `~/.bash_profile`, `~/.bashrc`, or `~/.zshrc`:
+```
+alias stsauth='docker run --rm -it -v ~/.aws:/home/stsauth/.aws -e AWS_PROFILE=$AWS_PROFILE -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION stsauth:latest'
+```
 
+### python/pip
 ```shell
 # Uninstall if a version of `stsauth` already exists
 $ pip uninstall stsauth
