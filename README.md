@@ -11,13 +11,17 @@ This method of authentication is preferred because it eliminates the need for lo
 1. Must already have access to an AWS account console.
 
 ## Install
+
 ### Docker
+
 Add the following alias to your `~/.bash_profile`, `~/.bashrc`, or `~/.zshrc`:
-```
+
+```sh
 alias stsauth='docker run --rm -it -v ~/.aws:/home/stsauth/.aws -e AWS_PROFILE=$AWS_PROFILE -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION stsauth:latest'
 ```
 
 ### python/pip
+
 ```shell
 # Uninstall if a version of `stsauth` already exists
 $ pip uninstall stsauth
@@ -32,29 +36,31 @@ $ pip install stsauth==0.1.0
 ## Upgrade
 
 ```shell
-$ pip install stsauth --upgrade
+pip install stsauth --upgrade
 ```
 
 ## Configuration
 
 - A valid AWS CLI configuration is required. For more information about the AWS CLI, see [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) for more information.
+
 - Sample `~/.aws/credentials` file:
-    ```conf
-    [default]
-    output = json
-    region = us-east-1
-    idpentryurl = https://<fqdn>/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices
-    domain = MYADDOMAIN
-    okta_org = my-organization
-    okta_shared_secret = 16CHARLONGSTRING
-    aws_access_key_id = awsaccesskeyidstringexample
-    aws_secret_access_key = awssecretaccesskeystringexample
-    ```
+
+  ```conf
+  [default]
+  output = json
+  region = us-east-1
+  idpentryurl = https://<fqdn>/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices
+  domain = MYADDOMAIN
+  okta_org = my-organization
+  okta_shared_secret = 16CHARLONGSTRING
+  aws_access_key_id = awsaccesskeyidstringexample
+  aws_secret_access_key = awssecretaccesskeystringexample
+  ```
 
 ## Usage
 
 ```shell
-$ stsauth
+$ stsauth --help
 Usage: stsauth [OPTIONS] COMMAND [ARGS]...
 
 Options:
@@ -64,7 +70,7 @@ Options:
 
 Commands:
   authenticate
-  profiles
+  profiles      Lists the profile details from the credentialsfile or a...
 
 $ stsauth authenticate --help
 Usage: stsauth authenticate [OPTIONS]
@@ -73,14 +79,17 @@ Options:
   -u, --username TEXT             IdP endpoint username.
   -p, --password TEXT             Program will prompt for input if not
                                   provided.
+
   -i, --idpentryurl TEXT          The initial url that starts the
                                   authentication process.
+
   -d, --domain TEXT               The active directory domain.
   -c, --credentialsfile TEXT      Path to AWS credentials file.
   -l, --profile TEXT              Name of config profile.
   -r, --region TEXT               The AWS region to use. ex: us-east-1
   -k, --okta-org TEXT             The Okta organization to use. ex: my-
                                   organization
+
   -s, --okta-shared-secret TEXT   Okta Shared Secret for TOTP Authentication.
                                   WARNING! Please use push notifications if at
                                   all possible. Unless you are aware of what
@@ -88,6 +97,7 @@ Options:
                                   expose your Shared Secret. Proceed with
                                   caution and use a tool like `pass` to
                                   securely store your secrets.
+
   -t, --vip-access-security-code TEXT
                                   VIP Access security code.
   -b, --browser                   If set, will attempt to open the console in
@@ -95,6 +105,7 @@ Options:
                                   console in an incognito window, set
                                   `browser_path`in your config file `default`
                                   section to your browser executable.
+
   -o, --output [json|text|table]
   -f, --force                     Auto-accept confirmation prompts.
   --help                          Show this message and exit.
@@ -156,11 +167,13 @@ Account-Two 000000000002-ADFS-Role-Two 2018-06-27 11:28:22 Active
 ```
 
 ## Warning
-It is **strongly** recommended to use Okta Push Notifications for MFA if at all possible. Storing your Shared Secret or passing it in through the command line comes with the risk of exposing the Shared Secret to unintended persons. If compromised, the security of MFA is lost. **Please proceed with caution and an understanding of the risks associated. *If you believe your Shared Secret has been compromised, please revoke it immediately.***
+
+It is **strongly** recommended to use Okta Push Notifications for MFA if at all possible. Storing your Shared Secret or passing it in through the command line comes with the risk of exposing the Shared Secret to unintended persons. If compromised, the security of MFA is lost. **Please proceed with caution and an understanding of the risks associated. _If you believe your Shared Secret has been compromised, please revoke it immediately._**
 
 ## Troubleshooting
 
 ### An error occurs when authenticating
+
 > An error occurred (AccessDenied) when calling the AssumeRoleWithSAML operation: Access denied
 
 You likely have lost permission. Please try to sign in via AWS Console.

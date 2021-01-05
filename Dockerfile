@@ -1,7 +1,5 @@
 FROM python:3.8-slim
-RUN useradd --create-home --shell /bin/bash stsauth
-WORKDIR /home/stsauth
-USER stsauth
+WORKDIR /usr/src/stsauth
 COPY . .
 RUN pip install .
-ENTRYPOINT ["/home/stsauth/.local/bin/stsauth"]
+ENTRYPOINT ["/usr/local/bin/stsauth"]

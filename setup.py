@@ -5,12 +5,18 @@ from setuptools import setup, find_packages
 def get_requirements(env=''):
     path = os.path.dirname(os.path.abspath(__file__))
     fn = 'requirements{}{}.txt'.format(('-' if env else ''), env)
-    with open(os.path.join(path, fn)) as fp:
-        return [x.strip() for x in fp.read().split('\n') if not x.startswith('#')]
+    fp = os.path.join(path, fn)
+    if os.path.exists(fp):
+        with open(fp, 'r') as reqs:
+            return [x.strip() for x in reqs.read().split('\n') if not x.startswith('#')]
+    else:
+        return []
 
 
-with open('README.md', 'r') as fh:
-    long_description = fh.read()
+long_description = ''
+if os.path.exists('README.md'):
+    with open('README.md', 'r') as fh:
+        long_description = fh.read()
 
 install_requires = get_requirements()
 tests_require = get_requirements('test')
