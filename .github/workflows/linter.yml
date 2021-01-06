@@ -53,5 +53,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_PYTHON_FLAKE8: true
           PYTHON_FLAKE8_CONFIG_FILE: tox.ini
+          PYTHON_PYLINT_CONFIG_FILE: .pylintrc
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
