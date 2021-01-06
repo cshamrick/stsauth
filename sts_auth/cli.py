@@ -17,9 +17,15 @@ from sts_auth.stsauth import STSAuth
 click_log.basic_config(utils.logger)
 
 
+bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+path_to_init = os.path.abspath(os.path.join(bundle_dir, '__init__.py'))
+with open(path_to_init, "r", encoding="utf8") as f:
+    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
+
+
 @click.group()
 @click_log.simple_verbosity_option(utils.logger)
-@click.version_option()
+@click.version_option(version=version)
 def cli():
     pass
 
@@ -197,7 +203,7 @@ def profiles(credentialsfile, profile, query):
 def open_console(login_url, browser_path=None):
     msg = 'Attempting to open the AWS Console...'
     click.secho(msg, fg='green')
-    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window', 'brave':' --incognito'}
+    private_flags = {'chrome': ' --incognito', 'firefox': ' -private-window', 'brave': ' --incognito'}
     if browser_path is not None:
         if not os.path.exists(browser_path):
             msg = (
@@ -434,3 +440,7 @@ def parse_arn_from_input_profile(account_roles, profile):
         )
         sys.exit()
     return role
+
+
+if __name__ == '__main__':
+    cli()
