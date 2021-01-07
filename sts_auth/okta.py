@@ -33,7 +33,7 @@ class Okta(object):
             # so it will be easier to pick pull out by type later
             return {f["factorType"]: f for f in okta_factors}
         else:
-            msg = "No Okta MFA methods available.\n" "Please visit https://{}.okta.com to configure Okta MFA."
+            msg = "No Okta MFA methods available.\nPlease visit https://{}.okta.com to configure Okta MFA."
             click.secho(msg.format(self.okta_org), fg="red")
             sys.exit(1)
 
@@ -42,9 +42,7 @@ class Okta(object):
         # we have to pass through the Okta portal regardless of whether MFA
         # will be required or not.
         if not self.okta_org:
-            msg = (
-                "Okta MFA required but no Okta Organization set. " "Please either set in the config or use `--okta-org`"
-            )
+            msg = "Okta MFA required but no Okta Organization set. Please either set in the config or use `--okta-org`"
             click.secho(msg, fg="red")
             sys.exit(1)
 
@@ -131,7 +129,7 @@ class Okta(object):
                 if status == "SUCCESS":
                     return True
         click.secho(
-            "TOTP Verification failed. " "Continuing to other methods if available", fg="red",
+            "TOTP Verification failed. Continuing to other methods if available", fg="red",
         )
         return False
 

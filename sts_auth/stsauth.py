@@ -111,7 +111,7 @@ class STSAuth(object):
         were not passed in from the CLI.
         """
         if self.config.has_section("default"):
-            logger.debug("Found 'default' section in" " {0.credentialsfile!r}!".format(self))
+            logger.debug("Found 'default' section in {0.credentialsfile!r}!".format(self))
             default = self.config["default"]
             msg = "Attribute {1!r} not set, using value from {0.credentialsfile!r}"
             if not self.region:
@@ -133,7 +133,7 @@ class STSAuth(object):
                 logger.debug(msg.format(self, "okta_shared_secret"))
                 self.okta_shared_secret = default.get("okta_shared_secret")
         else:
-            logger.debug("Could not find 'default' section in" " {0.credentialsfile!r}!".format(self))
+            logger.debug("Could not find 'default' section in {0.credentialsfile!r}!".format(self))
 
     def get_saml_response(self, response=None):
         if not response:
@@ -244,7 +244,7 @@ class STSAuth(object):
         if (login_error_message and len(login_error_message.string) > 0) or (
             vip_login_error_message and len(vip_login_error_message) > 0
         ):
-            msg = "Login page returned the following message. " "Please resolve this issue before continuing:"
+            msg = "Login page returned the following message. Please resolve this issue before continuing:"
             click.secho(msg, fg="red")
             error_msg = login_error_message if login_error_message else vip_login_error_message
             click.secho(error_msg.string, fg="red")
