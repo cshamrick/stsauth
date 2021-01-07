@@ -8,76 +8,80 @@ class MockResponse(object):
 
 
 full_attributes = [
-    'arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS',
-    'arn:aws:iam::000000000001:role/ADFS-1a,arn:aws:iam::000000000001:saml-provider/ADFS',
-    'arn:aws:iam::000000000002:role/ADFS-2a,arn:aws:iam::000000000002:saml-provider/ADFS',
-    'arn:aws:iam::000000000000:role/ADFS-0b,arn:aws:iam::000000000000:saml-provider/ADFS',
-    'arn:aws:iam::000000000001:role/ADFS-1b,arn:aws:iam::000000000001:saml-provider/ADFS',
-    'arn:aws:iam::000000000002:role/ADFS-2b,arn:aws:iam::000000000002:saml-provider/ADFS'
+    "arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS",
+    "arn:aws:iam::000000000001:role/ADFS-1a,arn:aws:iam::000000000001:saml-provider/ADFS",
+    "arn:aws:iam::000000000002:role/ADFS-2a,arn:aws:iam::000000000002:saml-provider/ADFS",
+    "arn:aws:iam::000000000000:role/ADFS-0b,arn:aws:iam::000000000000:saml-provider/ADFS",
+    "arn:aws:iam::000000000001:role/ADFS-1b,arn:aws:iam::000000000001:saml-provider/ADFS",
+    "arn:aws:iam::000000000002:role/ADFS-2b,arn:aws:iam::000000000002:saml-provider/ADFS",
 ]
 out_of_order_attributes = [
-    'arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS',
-    'arn:aws:iam::000000000001:saml-provider/ADFS,arn:aws:iam::000000000001:role/ADFS-1a',
-    'arn:aws:iam::000000000002:role/ADFS-2a,arn:aws:iam::000000000002:saml-provider/ADFS',
-    'arn:aws:iam::000000000000:saml-provider/ADFS,arn:aws:iam::000000000000:role/ADFS-0b',
-    'arn:aws:iam::000000000001:role/ADFS-1b,arn:aws:iam::000000000001:saml-provider/ADFS',
-    'arn:aws:iam::000000000002:role/ADFS-2b,arn:aws:iam::000000000002:saml-provider/ADFS'
+    "arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS",
+    "arn:aws:iam::000000000001:saml-provider/ADFS,arn:aws:iam::000000000001:role/ADFS-1a",
+    "arn:aws:iam::000000000002:role/ADFS-2a,arn:aws:iam::000000000002:saml-provider/ADFS",
+    "arn:aws:iam::000000000000:saml-provider/ADFS,arn:aws:iam::000000000000:role/ADFS-0b",
+    "arn:aws:iam::000000000001:role/ADFS-1b,arn:aws:iam::000000000001:saml-provider/ADFS",
+    "arn:aws:iam::000000000002:role/ADFS-2b,arn:aws:iam::000000000002:saml-provider/ADFS",
 ]
 full_account_roles = {
-    '000000000000': [
+    "000000000000": [
         {
-            'label': 'ADFS-0a',
-            'attr': 'arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS',
-            'id': '000000000000',
-            'name': 'AccountOne',
-            'num': 0
+            "label": "ADFS-0a",
+            "attr": "arn:aws:iam::000000000000:role/ADFS-0a,arn:aws:iam::000000000000:saml-provider/ADFS",
+            "id": "000000000000",
+            "name": "AccountOne",
+            "num": 0,
         },
         {
-            'label': 'ADFS-0b',
-            'attr': 'arn:aws:iam::000000000000:role/ADFS-0b,arn:aws:iam::000000000000:saml-provider/ADFS',
-            'id': '000000000000',
-            'name': 'AccountOne',
-            'num': 1
-        }
+            "label": "ADFS-0b",
+            "attr": "arn:aws:iam::000000000000:role/ADFS-0b,arn:aws:iam::000000000000:saml-provider/ADFS",
+            "id": "000000000000",
+            "name": "AccountOne",
+            "num": 1,
+        },
     ],
-    '000000000001': [
+    "000000000001": [
         {
-            'label': 'ADFS-1a',
-            'attr': 'arn:aws:iam::000000000001:role/ADFS-1a,arn:aws:iam::000000000001:saml-provider/ADFS',
-            'id': '000000000001',
-            'name': 'AccountTwo',
-            'num': 2
+            "label": "ADFS-1a",
+            "attr": "arn:aws:iam::000000000001:role/ADFS-1a,arn:aws:iam::000000000001:saml-provider/ADFS",
+            "id": "000000000001",
+            "name": "AccountTwo",
+            "num": 2,
         },
         {
-            'label': 'ADFS-1b',
-            'attr': 'arn:aws:iam::000000000001:role/ADFS-1b,arn:aws:iam::000000000001:saml-provider/ADFS',
-            'id': '000000000001',
-            'name': 'AccountTwo',
-            'num': 3
-        }
+            "label": "ADFS-1b",
+            "attr": "arn:aws:iam::000000000001:role/ADFS-1b,arn:aws:iam::000000000001:saml-provider/ADFS",
+            "id": "000000000001",
+            "name": "AccountTwo",
+            "num": 3,
+        },
     ],
-    '000000000002': [
+    "000000000002": [
         {
-            'label': 'ADFS-2a',
-            'attr': 'arn:aws:iam::000000000002:role/ADFS-2a,arn:aws:iam::000000000002:saml-provider/ADFS',
-            'id': '000000000002',
-            'name': 'AccountThree',
-            'num': 4
+            "label": "ADFS-2a",
+            "attr": "arn:aws:iam::000000000002:role/ADFS-2a,arn:aws:iam::000000000002:saml-provider/ADFS",
+            "id": "000000000002",
+            "name": "AccountThree",
+            "num": 4,
         },
         {
-            'label': 'ADFS-2b',
-            'attr': 'arn:aws:iam::000000000002:role/ADFS-2b,arn:aws:iam::000000000002:saml-provider/ADFS',
-            'id': '000000000002',
-            'name': 'AccountThree',
-            'num': 5
-        }
+            "label": "ADFS-2b",
+            "attr": "arn:aws:iam::000000000002:role/ADFS-2b,arn:aws:iam::000000000002:saml-provider/ADFS",
+            "id": "000000000002",
+            "name": "AccountThree",
+            "num": 5,
+        },
     ],
 }
 
-signature_value = base64.b64encode((('this is a signature value. ' * 9) + 'Its a signature').encode('utf-8'))
-attribute_statement = '\n'.join(["<AttributeValue>{}</AttributeValue>".format(attr) for attr in full_attributes])
+signature_value = base64.b64encode(
+    (("this is a signature value. " * 9) + "Its a signature").encode("utf-8")
+)
+attribute_statement = "\n".join(
+    ["<AttributeValue>{}</AttributeValue>".format(attr) for attr in full_attributes]
+)
 
-assertion_decoded = '''
+assertion_decoded = """
 <samlp:Response
     Version="2.0"
     ID="_ID_1"
@@ -157,100 +161,105 @@ assertion_decoded = '''
         </AuthnStatement>
     </Assertion>
 </samlp:Response>
-'''
+"""
 
 assertion_decoded_fmt = assertion_decoded.format(
-    signature_value=signature_value,
-    attribute_statement=attribute_statement
+    signature_value=signature_value, attribute_statement=attribute_statement
 )
 
-assertion = base64.b64encode(assertion_decoded_fmt.encode('utf-8'))
+assertion = base64.b64encode(assertion_decoded_fmt.encode("utf-8"))
 
 account_map = {
-    '000000000000': 'AccountOne',
-    '000000000001': 'AccountTwo',
-    '000000000002': 'AccountThree',
-    '000000000003': '',
+    "000000000000": "AccountOne",
+    "000000000001": "AccountTwo",
+    "000000000002": "AccountThree",
+    "000000000003": "",
 }
 
 
 def generate_account_list_page():
     curr_dir = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(curr_dir, 'html/account_list.html')) as f:
+    with open(os.path.join(curr_dir, "html/account_list.html")) as f:
         account_list_template = f.read()
 
-    with open(os.path.join(curr_dir, 'html/saml_account.html')) as f:
+    with open(os.path.join(curr_dir, "html/saml_account.html")) as f:
         saml_account_template = f.read()
 
-    with open(os.path.join(curr_dir, 'html/saml_role.html')) as f:
+    with open(os.path.join(curr_dir, "html/saml_role.html")) as f:
         saml_role_template = f.read()
 
     account_list_data = {
-        '000000000000': {
-            'name': 'AccountOne',
-            'roles': [
-                'arn:aws:iam::000000000000:role/ADFS-0a',
-                'arn:aws:iam::000000000000:role/ADFS-0b'
-            ]
+        "000000000000": {
+            "name": "AccountOne",
+            "roles": [
+                "arn:aws:iam::000000000000:role/ADFS-0a",
+                "arn:aws:iam::000000000000:role/ADFS-0b",
+            ],
         },
-        '000000000001': {
-            'name': 'AccountTwo',
-            'roles': [
-                'arn:aws:iam::000000000001:role/ADFS-1a',
-                'arn:aws:iam::000000000001:role/ADFS-1b'
-            ]
+        "000000000001": {
+            "name": "AccountTwo",
+            "roles": [
+                "arn:aws:iam::000000000001:role/ADFS-1a",
+                "arn:aws:iam::000000000001:role/ADFS-1b",
+            ],
         },
-        '000000000002': {
-            'name': 'AccountThree',
-            'roles': [
-                'arn:aws:iam::000000000002:role/ADFS-2a',
-                'arn:aws:iam::000000000002:role/ADFS-2b'
-            ]
+        "000000000002": {
+            "name": "AccountThree",
+            "roles": [
+                "arn:aws:iam::000000000002:role/ADFS-2a",
+                "arn:aws:iam::000000000002:role/ADFS-2b",
+            ],
         },
-        '000000000003': {
-            'name': '',
-            'roles': [
-                'arn:aws:iam::000000000002:role/ADFS-3a',
-                'arn:aws:iam::000000000002:role/ADFS-3b'
-            ]
-        }
+        "000000000003": {
+            "name": "",
+            "roles": [
+                "arn:aws:iam::000000000002:role/ADFS-3a",
+                "arn:aws:iam::000000000002:role/ADFS-3b",
+            ],
+        },
     }
 
     saml_accounts = ""
     for i, (k, v) in enumerate(account_list_data.items()):
         roles = ""
-        for role in v['roles']:
-            roles += saml_role_template.format(role_arn=role, role_name=role.split('/')[1])
-        account_name = (v['name'] + ' ') if v['name'] else v['name']
-        account_title = 'Account: {account_name}{account_id}'.format(account_name=account_name, account_id=k)
+        for role in v["roles"]:
+            roles += saml_role_template.format(
+                role_arn=role, role_name=role.split("/")[1]
+            )
+        account_name = (v["name"] + " ") if v["name"] else v["name"]
+        account_title = "Account: {account_name}{account_id}".format(
+            account_name=account_name, account_id=k
+        )
         saml_account = saml_account_template.format(
             account_index=i, account_title=account_title, saml_roles=roles
         )
         saml_accounts += saml_account
-    account_list = account_list_template.format(assertion=assertion, saml_accounts=saml_accounts)
+    account_list = account_list_template.format(
+        assertion=assertion, saml_accounts=saml_accounts
+    )
 
     return account_list
 
 
 aws_credentials_conf = {
-    'default': {
-        'output': 'json',
-        'region': 'us-east-1',
-        'idpentryurl': 'https://my.portal.com/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices',
-        'domain': 'MYADDOMAIN',
-        'okta_org': 'my-organization',
-        'okta_shared_secret': '16CHARLONGSTRING',
-        'aws_access_key_id': 'awsaccesskeyidstringexample',
-        'aws_secret_access_key': 'awssecretaccesskeystringexample',
+    "default": {
+        "output": "json",
+        "region": "us-east-1",
+        "idpentryurl": "https://my.portal.com/adfs/ls/idpinitiatedsignon.aspx?LoginToRP=urn:amazon:webservices",
+        "domain": "MYADDOMAIN",
+        "okta_org": "my-organization",
+        "okta_shared_secret": "16CHARLONGSTRING",
+        "aws_access_key_id": "awsaccesskeyidstringexample",
+        "aws_secret_access_key": "awssecretaccesskeystringexample",
     },
-    '000000000000 - ADFS - Account1': {
-        'output': 'json',
-        'region': 'us - east - 1',
-        'aws_access_key_id': 'awsaccesskeyidstringexample',
-        'aws_secret_access_key': 'awssecretaccesskeystringexample',
-        'aws_session_token': 'awssessiontoken',
-        'aws_credentials_expiry': '1547158293.0',
-        'account_name': 'test',
-        'account_id': '000000000000'
-    }
+    "000000000000 - ADFS - Account1": {
+        "output": "json",
+        "region": "us - east - 1",
+        "aws_access_key_id": "awsaccesskeyidstringexample",
+        "aws_secret_access_key": "awssecretaccesskeystringexample",
+        "aws_session_token": "awssessiontoken",
+        "aws_credentials_expiry": "1547158293.0",
+        "account_name": "test",
+        "account_id": "000000000000",
+    },
 }

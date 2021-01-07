@@ -18,8 +18,7 @@ jobs:
         env:
           VALIDATE_HTML: false
           VALIDATE_MARKDOWN: false
-          VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_PYTHON_ISORT: false
-#          PYTHON_FLAKE8_CONFIG_FILE: tox.ini
+          VALIDATE_PYTHON_FLAKE8: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

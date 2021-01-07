@@ -1,5 +1,6 @@
 import ipdb
 from unittest import TestCase
+
 try:
     from unittest.mock import MagicMock
 except ImportError:
@@ -10,17 +11,12 @@ from sts_auth.stsauth import STSAuth
 
 class TestSTSAuth(TestCase):
     def setUp(self):
-        self.username = 'username'
-        self.password = 'password'
+        self.username = "username"
+        self.password = "password"
         config = {
-            'default': {
-                'idpentryurl': '',
-                'domain': '',
-                'region': '',
-                'output': ''
-            }
+            "default": {"idpentryurl": "", "domain": "", "region": "", "output": ""}
         }
-        self.credentialsfile = './fixtures/credentials'
+        self.credentialsfile = "./fixtures/credentials"
         self.sts_auth = STSAuth(self.username, self.password, self.credentialsfile)
         self.sts_auth.config = MagicMock(return_value=config)
 
