@@ -10,9 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_state_token_from_response(response_text):
-    state_token_search = re.search(
-        re.compile(r"var stateToken = '(.*?)';"), response_text
-    )
+    state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response_text)
     group_len = 0 if state_token_search is None else len(state_token_search.groups())
     if group_len == 1:
         state_token = state_token_search.group(1)

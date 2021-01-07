@@ -59,13 +59,9 @@ class TestGetAccountIdFromRole(TestCase):
         self.acct_id_1 = "000000000000"
         self.acct_id_2 = "000000000001"
         self.short_acct_id = "00000000"
-        self._role = (
-            "arn:aws:iam::{}:role/ADFS-0a," "arn:aws:iam::{}:saml-provider/ADFS"
-        )
+        self._role = "arn:aws:iam::{}:role/ADFS-0a," "arn:aws:iam::{}:saml-provider/ADFS"
         self.role = self._role.format(self.acct_id_1, self.acct_id_1)
-        self.short_acct_id_role = self._role.format(
-            self.short_acct_id, self.short_acct_id
-        )
+        self.short_acct_id_role = self._role.format(self.short_acct_id, self.short_acct_id)
         self.different_ids_role = self._role.format(self.acct_id_1, self.acct_id_2)
 
     def test_get_account_id_from_role(self):
@@ -113,8 +109,7 @@ class TestParseAwsAccountNamesFromConfig(TestCase):
         self.config = configparser.RawConfigParser()
         self.config.read_dict(fixtures.aws_credentials_conf)
         self.account_map = {
-            v.get("account_id", ""): v.get("account_name", "")
-            for _, v in fixtures.aws_credentials_conf.items()
+            v.get("account_id", ""): v.get("account_name", "") for _, v in fixtures.aws_credentials_conf.items()
         }
 
     def test_parse_aws_account_names_from_config(self):

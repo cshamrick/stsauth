@@ -13,9 +13,7 @@ class TestSTSAuth(TestCase):
     def setUp(self):
         self.username = "username"
         self.password = "password"
-        config = {
-            "default": {"idpentryurl": "", "domain": "", "region": "", "output": ""}
-        }
+        config = {"default": {"idpentryurl": "", "domain": "", "region": "", "output": ""}}
         self.credentialsfile = "./fixtures/credentials"
         self.sts_auth = STSAuth(self.username, self.password, self.credentialsfile)
         self.sts_auth.config = MagicMock(return_value=config)

@@ -74,12 +74,8 @@ full_account_roles = {
     ],
 }
 
-signature_value = base64.b64encode(
-    (("this is a signature value. " * 9) + "Its a signature").encode("utf-8")
-)
-attribute_statement = "\n".join(
-    ["<AttributeValue>{}</AttributeValue>".format(attr) for attr in full_attributes]
-)
+signature_value = base64.b64encode((("this is a signature value. " * 9) + "Its a signature").encode("utf-8"))
+attribute_statement = "\n".join(["<AttributeValue>{}</AttributeValue>".format(attr) for attr in full_attributes])
 
 assertion_decoded = """
 <samlp:Response
@@ -223,20 +219,12 @@ def generate_account_list_page():
     for i, (k, v) in enumerate(account_list_data.items()):
         roles = ""
         for role in v["roles"]:
-            roles += saml_role_template.format(
-                role_arn=role, role_name=role.split("/")[1]
-            )
+            roles += saml_role_template.format(role_arn=role, role_name=role.split("/")[1])
         account_name = (v["name"] + " ") if v["name"] else v["name"]
-        account_title = "Account: {account_name}{account_id}".format(
-            account_name=account_name, account_id=k
-        )
-        saml_account = saml_account_template.format(
-            account_index=i, account_title=account_title, saml_roles=roles
-        )
+        account_title = "Account: {account_name}{account_id}".format(account_name=account_name, account_id=k)
+        saml_account = saml_account_template.format(account_index=i, account_title=account_title, saml_roles=roles)
         saml_accounts += saml_account
-    account_list = account_list_template.format(
-        assertion=assertion, saml_accounts=saml_accounts
-    )
+    account_list = account_list_template.format(assertion=assertion, saml_accounts=saml_accounts)
 
     return account_list
 

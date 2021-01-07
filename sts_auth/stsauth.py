@@ -96,9 +96,7 @@ class STSAuth(object):
             msg = (
                 "Config value missing for the items {}.\n"
                 "Please add these to {} or provide them "
-                "through CLI flags (see `stsauth --help`) and try again.".format(
-                    items, self.credentialsfile
-                )
+                "through CLI flags (see `stsauth --help`) and try again.".format(items, self.credentialsfile)
             )
             click.secho(msg, fg="red")
             valid = False
@@ -113,9 +111,7 @@ class STSAuth(object):
         were not passed in from the CLI.
         """
         if self.config.has_section("default"):
-            logger.debug(
-                "Found 'default' section in" " {0.credentialsfile!r}!".format(self)
-            )
+            logger.debug("Found 'default' section in" " {0.credentialsfile!r}!".format(self))
             default = self.config["default"]
             msg = "Attribute {1!r} not set, using value from {0.credentialsfile!r}"
             if not self.region:
@@ -137,19 +133,14 @@ class STSAuth(object):
                 logger.debug(msg.format(self, "okta_shared_secret"))
                 self.okta_shared_secret = default.get("okta_shared_secret")
         else:
-            logger.debug(
-                "Could not find 'default' section in"
-                " {0.credentialsfile!r}!".format(self)
-            )
+            logger.debug("Could not find 'default' section in" " {0.credentialsfile!r}!".format(self))
 
     def get_saml_response(self, response=None):
         if not response:
             logger.debug("No response provided. Fetching IDP Entry URL...")
             response = self.session.get(self.idpentryurl)
         response.soup = BeautifulSoup(response.text, "lxml")
-        assertion_pattern = re.compile(
-            r"name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>"
-        )
+        assertion_pattern = re.compile(r"name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>")
         assertion = re.search(assertion_pattern, response.text)
 
         if assertion:
@@ -223,16 +214,8 @@ class STSAuth(object):
                 # Fallback to the IDP Entry URL from the config file if the
                 # form action does not contain a fully defined URL.
                 # i.e. action='/path/to/something' vs action='http://test.com/path/to/something'
-                scheme = (
-                    parsed_action.scheme
-                    if parsed_action.scheme
-                    else parsed_idp_url.scheme
-                )
-                netloc = (
-                    parsed_action.netloc
-                    if parsed_action.netloc
-                    else parsed_idp_url.netloc
-                )
+                scheme = parsed_action.scheme if parsed_action.scheme else parsed_idp_url.scheme
+                netloc = parsed_action.netloc if parsed_action.netloc else parsed_idp_url.netloc
                 url_parts = (
                     scheme,
                     netloc,
@@ -250,9 +233,7 @@ class STSAuth(object):
         idp_auth_form_submit_url = self.build_idp_auth_url(response)
 
         logger.debug("Posting login data to URL: {}".format(idp_auth_form_submit_url))
-        login_response = self.session.post(
-            idp_auth_form_submit_url, data=payload, verify=True
-        )
+        login_response = self.session.post(idp_auth_form_submit_url, data=payload, verify=True)
         login_response_page = BeautifulSoup(login_response.text, "html.parser")
         # Checks for errorText id on page to indicate any errors
         login_error_message = login_response_page.find(id="errorText")
@@ -263,14 +244,9 @@ class STSAuth(object):
         if (login_error_message and len(login_error_message.string) > 0) or (
             vip_login_error_message and len(vip_login_error_message) > 0
         ):
-            msg = (
-                "Login page returned the following message. "
-                "Please resolve this issue before continuing:"
-            )
+            msg = "Login page returned the following message. " "Please resolve this issue before continuing:"
             click.secho(msg, fg="red")
-            error_msg = (
-                login_error_message if login_error_message else vip_login_error_message
-            )
+            error_msg = login_error_message if login_error_message else vip_login_error_message
             click.secho(error_msg.string, fg="red")
             sys.exit(1)
         return login_response
@@ -302,9 +278,7 @@ class STSAuth(object):
         )
         return token
 
-    def write_to_configuration_file(
-        self, token, account_name, account_id, profile=None
-    ):
+    def write_to_configuration_file(self, token, account_name, account_id, profile=None):
         """Store credentials in a specific profile.
 
         Takes the credentials and details from the token provided and writes them out to a
@@ -334,15 +308,9 @@ class STSAuth(object):
             self.config.set(profile, "account_name", account_name)
         if account_id != "":
             self.config.set(profile, "account_id", account_id)
-        self.config.set(
-            profile, "aws_access_key_id", credentials.get("AccessKeyId", "None")
-        )
-        self.config.set(
-            profile, "aws_secret_access_key", credentials.get("SecretAccessKey", "None")
-        )
-        self.config.set(
-            profile, "aws_session_token", credentials.get("SessionToken", "None")
-        )
+        self.config.set(profile, "aws_access_key_id", credentials.get("AccessKeyId", "None"))
+        self.config.set(profile, "aws_secret_access_key", credentials.get("SecretAccessKey", "None"))
+        self.config.set(profile, "aws_session_token", credentials.get("SessionToken", "None"))
         self.config.set(profile, "aws_credentials_expiry", expiration)
 
         # Write the AWS STS token into the AWS credential file
@@ -355,17 +323,11 @@ class STSAuth(object):
             "Referer": response.url,
             "Content-Type": "application/x-www-form-urlencoded",
         }
-        selectors = ",".join(
-            "{}[name]".format(i) for i in ("input", "button", "textarea", "select")
-        )
-        data = [
-            (tag.get("name"), tag.get("value")) for tag in hiddenform.select(selectors)
-        ]
+        selectors = ",".join("{}[name]".format(i) for i in ("input", "button", "textarea", "select"))
+        data = [(tag.get("name"), tag.get("value")) for tag in hiddenform.select(selectors)]
         url = hiddenform.attrs.get("action")
         try:
-            adfs_response = self.session.post(
-                url, data=data, headers=headers, timeout=5
-            )
+            adfs_response = self.session.post(url, data=data, headers=headers, timeout=5)
         except requests.exceptions.ConnectionError as e:
             msg_fmt = "Could not fetch account aliases from {} due to an exception. Using cached values!\n {}"
             click.secho(msg_fmt.format(url, str(e)), fg="red")

@@ -48,9 +48,7 @@ def cli():
     default="~/.aws/credentials",
 )
 @click.option("--profile", "-l", default=None, help="Name of config profile.")
-@click.option(
-    "--region", "-r", default=None, help="The AWS region to use. ex: us-east-1"
-)
+@click.option("--region", "-r", default=None, help="The AWS region to use. ex: us-east-1")
 @click.option(
     "--okta-org",
     "-k",
@@ -69,9 +67,7 @@ def cli():
         "Proceed with caution and use a tool like `pass` to securely store your secrets."
     ),
 )
-@click.option(
-    "--vip-access-security-code", "-t", default=None, help="VIP Access security code."
-)
+@click.option("--vip-access-security-code", "-t", default=None, help="VIP Access security code.")
 @click.option(
     "--browser",
     "-b",
@@ -82,9 +78,7 @@ def cli():
         "in your config file `default` section to your browser executable."
     ),
 )
-@click.option(
-    "--output", "-o", default=None, type=click.Choice(["json", "text", "table"])
-)
+@click.option("--output", "-o", default=None, type=click.Choice(["json", "text", "table"]))
 @click.option("--force", "-f", is_flag=True, help="Auto-accept confirmation prompts.")
 def authenticate(
     username,
@@ -139,9 +133,7 @@ def authenticate(
     if profile:
         # If a profile is passed in, use that
         role = parse_arn_from_input_profile(account_roles, profile)
-    elif (account_roles_len > 1) or (
-        account_roles_len == 1 and account_roles_vals_len > 1
-    ):
+    elif (account_roles_len > 1) or (account_roles_len == 1 and account_roles_vals_len > 1):
         # If there is more than one account or there is one account with multiple roles, prompt
         role = prompt_for_role(account_map, account_roles)
     elif account_roles_len == 1 and account_roles_vals_len == 1:
@@ -151,9 +143,7 @@ def authenticate(
         else:
             role = account_roles.values()[0][0]
     else:
-        click.secho(
-            "No roles are available. Please verify in the ADFS Portal.", fg="red"
-        )
+        click.secho("No roles are available. Please verify in the ADFS Portal.", fg="red")
 
     role_arn, principal_arn = role.get("attr").split(",")
     # Generate a safe-name for the profile based on acct no. and role
@@ -173,9 +163,7 @@ def authenticate(
     click.secho("\nRequesting credentials for role: " + role_arn, fg="green")
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
-    token = sts_auth.fetch_aws_sts_token(
-        role_arn, principal_arn, saml_response.assertion, aws_profile=profile
-    )
+    token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion, aws_profile=profile)
 
     # Put the credentials into a role specific section
     acct_name = role.get("name", "")
@@ -230,9 +218,7 @@ def profiles(credentialsfile, profile, query):
 
     if profile is None:
         if query is not None:
-            click.secho(
-                "When using the 'query' parameter, 'profile' is required.", fg="red"
-            )
+            click.secho("When using the 'query' parameter, 'profile' is required.", fg="red")
             sys.exit(1)
         else:
             headers = ["Account", "Profile", "Expire Date", "Status"]
@@ -299,9 +285,7 @@ def fetch_profiles_from_config(config):
         accounts.append(account)
 
         profile_expiry = config.get(profile, "aws_credentials_expiry", fallback=None)
-        profile_expiry_string = (
-            str(utils.from_epoch(profile_expiry)) if profile_expiry else "No Expiry Set"
-        )
+        profile_expiry_string = str(utils.from_epoch(profile_expiry)) if profile_expiry else "No Expiry Set"
         expiry.append(profile_expiry_string)
 
         is_active = utils.is_profile_active(config, profile)
