@@ -20,5 +20,4 @@ jobs:
           VALIDATE_MARKDOWN: false
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_PYTHON_ISORT: false
-          VALIDATE_PYTHON_FLAKE8: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
