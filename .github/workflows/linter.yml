@@ -16,6 +16,7 @@ jobs:
       - name: super-linter
         uses: docker://github/super-linter:v3
         env:
+          LINTER_RULES_PATH: /
           VALIDATE_HTML: false
           VALIDATE_MARKDOWN: false
           VALIDATE_PYTHON_PYLINT: false
