@@ -21,5 +21,5 @@ jobs:
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_PYTHON_ISORT: false
-          PYTHON_FLAKE8_CONFIG_FILE: tox.ini
+#          PYTHON_FLAKE8_CONFIG_FILE: tox.ini
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
