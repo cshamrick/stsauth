@@ -35,25 +35,16 @@ def cli():
     help="Program will prompt for input if not provided.",
 )
 @click.option(
-    "--idpentryurl",
-    "-i",
-    default=None,
-    help="The initial url that starts the authentication process.",
+    "--idpentryurl", "-i", default=None, help="The initial url that starts the authentication process.",
 )
 @click.option("--domain", "-d", help="The active directory domain.")
 @click.option(
-    "--credentialsfile",
-    "-c",
-    help="Path to AWS credentials file.",
-    default="~/.aws/credentials",
+    "--credentialsfile", "-c", help="Path to AWS credentials file.", default="~/.aws/credentials",
 )
 @click.option("--profile", "-l", default=None, help="Name of config profile.")
 @click.option("--region", "-r", default=None, help="The AWS region to use. ex: us-east-1")
 @click.option(
-    "--okta-org",
-    "-k",
-    default=None,
-    help="The Okta organization to use. ex: my-organization",
+    "--okta-org", "-k", default=None, help="The Okta organization to use. ex: my-organization",
 )
 @click.option(
     "--okta-shared-secret",
@@ -198,10 +189,7 @@ def authenticate(
 
 @cli.command()
 @click.option(
-    "--credentialsfile",
-    "-c",
-    help="Path to AWS credentials file.",
-    default="~/.aws/credentials",
+    "--credentialsfile", "-c", help="Path to AWS credentials file.", default="~/.aws/credentials",
 )
 @click.argument("profile", nargs=1, required=False)
 @click.option("--query", "-q", help="Value to query from the profile.")
@@ -355,8 +343,7 @@ def fetch_profile_attribute(config, profile, query):
 
     if attribute_value is None:
         click.secho(
-            "Invalid value {!r} for 'query' parameter. Valid choices:".format(query),
-            fg="red",
+            "Invalid value {!r} for 'query' parameter. Valid choices:".format(query), fg="red",
         )
         click.secho(", ".join(profile_attributes.keys()), fg="red")
         sys.exit(1)
@@ -472,10 +459,7 @@ def parse_arn_from_input_profile(account_roles, profile):
     profile_split = profile.split("-")
     acct_number = profile_split[0]
     role_name = "-".join(profile_split[1:])
-    role = next(
-        (item for item in account_roles[acct_number] if item["label"] == role_name),
-        None,
-    )
+    role = next((item for item in account_roles[acct_number] if item["label"] == role_name), None,)
     if role is None:
         click.secho(
             "Profile not found!\n"

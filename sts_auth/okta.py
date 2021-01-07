@@ -131,8 +131,7 @@ class Okta(object):
                 if status == "SUCCESS":
                     return True
         click.secho(
-            "TOTP Verification failed. " "Continuing to other methods if available",
-            fg="red",
+            "TOTP Verification failed. " "Continuing to other methods if available", fg="red",
         )
         return False
 
