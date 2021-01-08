@@ -4,10 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
 
 jobs:
   pypi:
     runs-on: ubuntu-latest
+    if: github.event_name != 'branch'
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
