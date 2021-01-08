@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
     branches:
+      - 'master'
+      - 'feature/*'
+      - 'hotfix/*'
 
 jobs:
   pypi:
