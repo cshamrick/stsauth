@@ -1,4 +1,4 @@
-name: Upload Python Package
+name: Publish to hub.docker.com
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - 'hotfix/*'
 
 jobs:
-  docker:
+  publish:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
