@@ -1,0 +1,13 @@
+[flake8]
+ignore = F401,E231
+max-line-length = 120
+max-complexity = 11
+exclude =
+    __pycache__,
+    .eggs,
+    .github,
+    .pytest_cache,
+    .tox,
+    build,
+    dist,
+    stsauth.egg-info
