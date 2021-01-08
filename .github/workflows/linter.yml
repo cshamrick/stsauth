@@ -1,0 +1,25 @@
+name: super-linter
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: super-linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: super-linter
+        uses: docker://github/super-linter:v3
+        env:
+          LINTER_RULES_PATH: /
+          VALIDATE_HTML: false
+          VALIDATE_MARKDOWN: false
+          VALIDATE_PYTHON_PYLINT: false
+          VALIDATE_PYTHON_ISORT: false
+          PYTHON_BLACK_CONFIG_FILE: pyproject.toml
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
