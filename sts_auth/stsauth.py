@@ -252,7 +252,12 @@ class STSAuth(object):
         return login_response
 
     def fetch_aws_sts_token(
-        self, role_arn, principal_arn, assertion, duration_seconds=3600, aws_profile=None,
+        self,
+        role_arn,
+        principal_arn,
+        assertion,
+        duration_seconds=3600,
+        aws_profile=None,
     ):
         """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
         try:
@@ -266,7 +271,10 @@ class STSAuth(object):
             raise e
 
         token = sts.assume_role_with_saml(
-            RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion, DurationSeconds=duration_seconds,
+            RoleArn=role_arn,
+            PrincipalArn=principal_arn,
+            SAMLAssertion=assertion,
+            DurationSeconds=duration_seconds,
         )
         return token
 
