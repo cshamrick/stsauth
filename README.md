@@ -7,23 +7,28 @@ Creates a temporary `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` that can be 
 
 This method of authentication is preferred because it eliminates the need for long-lived access keys and forces every user to use their own credentials when connecting to AWS Services.
 
-## Prerequisites
+- [Installation](#installation)
+  - [Using Docker](#using-docker)
+  - [Using Pip](#using-pip)
+  - [Configuration](#configuration)
+- [Usage](#usage)
+- [Warning](#warning)
+- [Troubleshooting](#troubleshooting)
+- [Credits](#credits)
 
-1. `python` and `pip` must be installed.
-1. Ensure `pip` is configured to work behind your organization's proxy server if necessary. See [PIP Configuration](https://pip.pypa.io/en/stable/user_guide/#configuration) for details on configuration.
-1. Must already have access to an AWS account console.
+## Installation
 
-## Install
+### Using `docker`
 
-### Docker
+`docker pull cshamrick/stsauth:latest`
 
 Add the following alias to your `~/.bash_profile`, `~/.bashrc`, or `~/.zshrc`:
 
 ```sh
-alias stsauth='docker run --rm -it -v ~/.aws:/root/.aws -e AWS_PROFILE=$AWS_PROFILE -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION stsauth:latest'
+alias stsauth='docker run --rm -it -v ~/.aws:/root/.aws -e AWS_PROFILE=$AWS_PROFILE -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION cshamrick/stsauth:latest'
 ```
 
-### python/pip
+### Using `pip`
 
 ```shell
 # Uninstall if a version of `stsauth` already exists
@@ -33,16 +38,13 @@ $ pip uninstall stsauth
 $ pip install stsauth
 
 # Install a specific version
-$ pip install stsauth==0.1.0
+$ pip install stsauth==0.1.0 # Get the latest from: https://github.com/cshamrick/stsauth/releases
+
+# Upgrade an existing installation
+$ pip install stsauth --upgrade
 ```
 
-## Upgrade
-
-```shell
-pip install stsauth --upgrade
-```
-
-## Configuration
+### Configuration
 
 - A valid AWS CLI configuration is required. For more information about the AWS CLI, see [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) for more information.
 
