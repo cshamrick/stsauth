@@ -107,7 +107,7 @@ class Okta(object):
                 "TOTP Verification available but Okta Shared Secret "
                 "is not set. For instructions to set the Shared Secret, "
                 "refer to the README: "
-                "https://github.com/cshamrick/stsauth/blob/master/README.md"
+                "https://github.com/cshamrick/stsauth/blob/main/README.md"
             )
             return False
 
