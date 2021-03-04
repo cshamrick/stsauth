@@ -1,7 +1,8 @@
 # stsauth
 [![codecov](https://codecov.io/gh/cshamrick/stsauth/branch/master/graph/badge.svg?token=WZFLZUSK1N)](https://codecov.io/gh/cshamrick/stsauth)
-
 [![GitHub Super-Linter](https://github.com/cshamrick/stsauth/workflows/super-linter/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/cshamrick/stsauth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cshamrick/stsauth/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cshamrick/stsauth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cshamrick/stsauth/context:python)
 
 Creates a temporary `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` that can be used with cli tools such as `awscli`, `ansible`, `terraform` and more.
 
