@@ -5,11 +5,16 @@ import logging
 from datetime import datetime
 from collections import OrderedDict
 from xml.etree import ElementTree
+from typing import List, Optional, Mapping
 
+from requests import Response
+
+FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+logging.basicConfig(format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-def get_state_token_from_response(response_text):
+def get_state_token_from_response(response_text: str) -> Optional[str]:
     state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response_text)
     group_len = 0 if state_token_search is None else len(state_token_search.groups())
     if group_len == 1:
@@ -19,21 +24,7 @@ def get_state_token_from_response(response_text):
     return None
 
 
-def parse_aws_account_names_from_config(config):
-    acct_map = {}
-    for item in config.items():
-        section = item[1]
-        acct_id = section.get("account_id", "")
-        # legacy support for `account` key
-        # use `.pop()` to "psuedo-migrate" to the `account_name` key
-        acct_name = section.pop("account", None) or section.get("account_name")
-        acct_name = acct_name if acct_name else ""
-        acct_map[acct_id] = acct_name
-    logger.debug("Account Names: {}".format(acct_map))
-    return acct_map
-
-
-def parse_aws_account_names_from_response(response):
+def parse_aws_account_names_from_response(response: Response) -> Mapping[str, str]:
     # need to pass in config, set acct_id and acct_name to
     # current values in config if they exist. This avoids
     # setting the account name to 'blank' if we can't reach the end point.
@@ -57,13 +48,13 @@ def parse_aws_account_names_from_response(response):
     return acct_map
 
 
-def is_valid_account_id(acct_id):
+def is_valid_account_id(acct_id: str) -> bool:
     acct_regex = re.compile(r"^\d{12}$")
     acct_match = re.match(acct_regex, acct_id)
     return acct_match is not None
 
 
-def format_roles_for_display(attrs, account_map):
+def format_roles_for_display(attrs: List[str], account_map: Mapping[str, str]) -> OrderedDict:
     """Formats role ARNs for display to the user.
 
     Args:
@@ -91,7 +82,7 @@ def format_roles_for_display(attrs, account_map):
     return account_roles
 
 
-def parse_roles_from_assertion(assertion):
+def parse_roles_from_assertion(assertion: str) -> List[str]:
     """Given the base64 encoded assertion, return a list of roles.
 
     Args:
@@ -115,7 +106,7 @@ def parse_roles_from_assertion(assertion):
     return roles
 
 
-def format_role_order(roles):
+def format_role_order(roles: List[str]) -> List[str]:
     """Given roles, returns them in the format: role_arn,principal_arn.
 
     The format of the attribute value should be role_arn,principal_arn
@@ -138,7 +129,7 @@ def format_role_order(roles):
     return roles
 
 
-def get_account_id_from_role(role):
+def get_account_id_from_role(role: str) -> str:
     """Parse the account ID from the role.
 
     Args:
@@ -158,7 +149,7 @@ def get_account_id_from_role(role):
         raise Exception("Missing or malformed account ID in {}!".format(role))
 
 
-def to_epoch(dt):
+def to_epoch(dt: datetime) -> float:
     """Given a datetime object, return seconds since epoch.
 
     Args:
@@ -171,7 +162,7 @@ def to_epoch(dt):
     return (dt - datetime(1970, 1, 1)).total_seconds()
 
 
-def from_epoch(seconds):
+def from_epoch(seconds: str) -> datetime:
     """Given seconds since epoch, return a datetime object
 
     Args:
@@ -203,10 +194,39 @@ def unset_proxy():
             del os.environ[var]
 
 
-def is_profile_active(config, profile):
-    if config.has_section(profile):
-        expiry = config.get(profile, "aws_credentials_expiry", fallback=None)
-        active = from_epoch(expiry) > datetime.utcnow() if expiry else True
-        return active
-    else:
-        return False
+def table_format(headers: List[str], values: List[List[str]]) -> None:
+    """Formats and prints tabular formatted data.
+
+    headers = ['col1', 'col2']
+    values  = [
+        ['row1col1', 'row2col1'],
+        ['row1col2', 'row2col2']
+    ]
+
+    Output:
+    col1     col2
+    -------- --------
+    row1col1 row2col1
+    row1col2 row2col2
+
+    Args:
+        headers: A list of the headers for each column.
+        values: A list of lists, each list containing a column of data.
+    """
+    if len(headers) != len(values):
+        raise Exception("Not enough headers for columns.")
+    row_format = ""
+    max_lens = []
+    for i, v in enumerate(values):
+        row_format += "{{{0}:<{{{1}}}}} ".format(i * 2, (i * 2) + 1)
+        v.insert(0, headers[i])
+        max_len = len(max(v, key=len))
+        max_lens.append(max_len)
+        v.insert(1, ("-" * max_len))
+
+    row_len = len(values) + len(max_lens)
+    for row_items in zip(*values):
+        row = [None] * row_len
+        row[::2] = row_items
+        row[1::2] = max_lens
+        print(row_format.format(*row))

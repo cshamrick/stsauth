@@ -3,16 +3,18 @@ import re
 import sys
 import configparser
 from datetime import datetime
+from typing import Optional, Mapping
 
 import boto3
 import click
 import requests
 from requests_ntlm import HttpNtlmAuth
 from bs4 import BeautifulSoup
-from botocore.exceptions import ProfileNotFound
+from botocore.exceptions import ProfileNotFound, ClientError
 
 from sts_auth import utils
 from sts_auth.okta import Okta
+from sts_auth.config import Config
 from sts_auth.utils import logger
 
 try:
@@ -39,106 +41,44 @@ class STSAuth(object):
 
     def __init__(
         self,
-        username,
-        password,
-        credentialsfile,
-        idpentryurl=None,
-        profile=None,
-        okta_org=None,
-        okta_shared_secret=None,
-        domain=None,
-        region=None,
-        output=None,
-        vip_access_security_code=None,
-        force=False,
+        username: str,
+        password: str,
+        credentialsfile: str,
+        idpentryurl: Optional[str] = None,
+        profile: Optional[str] = None,
+        okta_org: Optional[str] = None,
+        okta_shared_secret: Optional[str] = None,
+        domain: Optional[str] = None,
+        region: Optional[str] = None,
+        output: Optional[str] = None,
+        vip_access_security_code: Optional[str] = None,
+        force: Optional[bool] = False,
     ):
-        self.domain = domain
-        self.username = username
-        self.password = password
         self.credentialsfile = os.path.expanduser(credentialsfile)
-        self.idpentryurl = idpentryurl
-        self.profile = profile
-        self.region = region
-        self.output = output
-        self.okta_org = okta_org
-        self.okta_shared_secret = okta_shared_secret
         self.vip_access_security_code = vip_access_security_code
+        self.config = Config(
+            self.credentialsfile,
+            username=username,
+            password=password,
+            domain=domain,
+            idpentryurl=idpentryurl,
+            region=region,
+            output=output,
+            okta_org=okta_org,
+            okta_shared_secret=okta_shared_secret,
+            profile=profile,
+        )
+        self.config.load()
+        self.profile = self.config.profile
+
         self.session = requests.Session()
-
         self.session.headers.update({"content-type": "application/json"})
-        self.session.auth = HttpNtlmAuth(self.domain_user, self.password)
-        self.config = configparser.RawConfigParser()
-        self.config.read(self.credentialsfile)
+        self.session.auth = HttpNtlmAuth(self.config.domain_user, self.config.password)
 
-    @property
-    def domain_user(self):
-        if self.domain:
-            return "{0.domain}\\{0.username}".format(self)
-        else:
-            return self.username
-
-    @property
-    def config_file_is_valid(self):
-        valid = True
-        url = self.config.get("default", "idpentryurl", fallback=self.idpentryurl)
-        domain = self.config.get("default", "domain", fallback=self.domain)
-        region = self.config.get("default", "region", fallback=self.region)
-        output = self.config.get("default", "output", fallback=self.output)
-
-        _map = {
-            "idpentryurl": url,
-            "domain": domain,
-            "region": region,
-            "output": output,
-        }
-        items = [k for k, v in _map.items() if not v]
-        if items:
-            msg = (
-                "Config value missing for the items {}.\n"
-                "Please add these to {} or provide them "
-                "through CLI flags (see `stsauth --help`) and try again.".format(items, self.credentialsfile)
-            )
-            click.secho(msg, fg="red")
-            valid = False
-        return valid
-
-    @property
-    def credentials_expired(self):
-        return not utils.is_profile_active(self.config, self.profile)
-
-    def parse_config_file(self):
-        """Read configuration file and only set values if they
-        were not passed in from the CLI.
-        """
-        if self.config.has_section("default"):
-            logger.debug("Found 'default' section in {0.credentialsfile!r}!".format(self))
-            default = self.config["default"]
-            msg = "Attribute {1!r} not set, using value from {0.credentialsfile!r}"
-            if not self.region:
-                logger.debug(msg.format(self, "region"))
-                self.region = default.get("region")
-            if not self.output:
-                logger.debug(msg.format(self, "output"))
-                self.output = default.get("output")
-            if not self.idpentryurl:
-                logger.debug(msg.format(self, "idpentryurl"))
-                self.idpentryurl = default.get("idpentryurl")
-            if not self.domain:
-                logger.debug(msg.format(self, "domain"))
-                self.domain = default.get("domain")
-            if not self.okta_org:
-                logger.debug(msg.format(self, "okta_org"))
-                self.okta_org = default.get("okta_org")
-            if not self.okta_shared_secret:
-                logger.debug(msg.format(self, "okta_shared_secret"))
-                self.okta_shared_secret = default.get("okta_shared_secret")
-        else:
-            logger.debug("Could not find 'default' section in {0.credentialsfile!r}!".format(self))
-
-    def get_saml_response(self, response=None):
+    def get_saml_response(self, response: Optional[requests.Response] = None) -> requests.Response:
         if not response:
             logger.debug("No response provided. Fetching IDP Entry URL...")
-            response = self.session.get(self.idpentryurl)
+            response = self.session.get(self.config.idpentryurl)
         response.soup = BeautifulSoup(response.text, "lxml")
         assertion_pattern = re.compile(r"name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>")
         assertion = re.search(assertion_pattern, response.text)
@@ -163,8 +103,8 @@ class STSAuth(object):
             okta_client = Okta(
                 session=self.session,
                 state_token=state_token,
-                okta_org=self.okta_org,
-                okta_shared_secret=self.okta_shared_secret,
+                okta_org=self.config.okta_org,
+                okta_shared_secret=self.config.okta_shared_secret,
             )
             okta_response = okta_client.handle_okta_verification(response)
             return self.get_saml_response(response=okta_response)
@@ -181,7 +121,7 @@ class STSAuth(object):
             click.secho(msg, fg="red")
             sys.exit(1)
 
-    def generate_payload_from_login_page(self, response):
+    def generate_payload_from_login_page(self, response: requests.Response) -> Mapping[str, str]:
         login_page = BeautifulSoup(response.text, "html.parser")
         payload = {}
 
@@ -190,11 +130,11 @@ class STSAuth(object):
             value = input_tag.get("value", "")
             logger.debug("Adding value for {!r} to Login Form payload.".format(name))
             if "user" in name.lower():
-                payload[name] = self.domain_user
+                payload[name] = self.config.domain_user
             elif "email" in name.lower():
-                payload[name] = self.domain_user
+                payload[name] = self.config.domain_user
             elif "pass" in name.lower():
-                payload[name] = self.password
+                payload[name] = self.config.password
             elif "security_code" in name.lower():
                 payload[name] = self.vip_access_security_code
             else:
@@ -202,7 +142,7 @@ class STSAuth(object):
 
         return payload
 
-    def build_idp_auth_url(self, response):
+    def build_idp_auth_url(self, response: requests.Response) -> str:
         idp_auth_form_submit_url = response.url
         login_page = BeautifulSoup(response.text, "html.parser")
 
@@ -210,7 +150,7 @@ class STSAuth(object):
             action = form.get("action")
             if action:
                 parsed_action = urlparse(action)
-                parsed_idp_url = urlparse(self.idpentryurl)
+                parsed_idp_url = urlparse(self.config.idpentryurl)
                 # Fallback to the IDP Entry URL from the config file if the
                 # form action does not contain a fully defined URL.
                 # i.e. action='/path/to/something' vs action='http://test.com/path/to/something'
@@ -228,7 +168,7 @@ class STSAuth(object):
 
         return idp_auth_form_submit_url
 
-    def authenticate_to_adfs_portal(self, response):
+    def authenticate_to_adfs_portal(self, response: requests.Response) -> requests.Response:
         payload = self.generate_payload_from_login_page(response)
         idp_auth_form_submit_url = self.build_idp_auth_url(response)
 
@@ -251,65 +191,8 @@ class STSAuth(object):
             sys.exit(1)
         return login_response
 
-    def fetch_aws_sts_token(
-        self, role_arn, principal_arn, assertion, duration_seconds=3600, aws_profile=None,
-    ):
-        """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
-        try:
-            session = boto3.Session(profile_name=aws_profile)
-            sts = session.client("sts")
-        except ProfileNotFound as e:
-            click.secho(str(e), fg="red")
-            sys.exit(1)
-        except Exception as e:
-            # TODO: Proper exception and message
-            raise e
-
-        token = sts.assume_role_with_saml(
-            RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion, DurationSeconds=duration_seconds,
-        )
-        return token
-
-    def write_to_configuration_file(self, token, account_name, account_id, profile=None):
-        """Store credentials in a specific profile.
-
-        Takes the credentials and details from the token provided and writes them out to a
-        configuration
-
-        Args:
-            token: Object containing the credentials to write out.
-            account_name: Name of AWS Account
-            profile: optional profile paramater. Uses the class profile if undefined
-        """
-        if profile is None:
-            profile = self.profile
-
-        if not self.config.has_section(profile):
-            self.config.add_section(profile)
-
-        if not self.config.has_section("default"):
-            self.config.add_section("default")
-
-        self.config.set("default", "idpentryurl", self.idpentryurl)
-
-        credentials = token.get("Credentials", {})
-        expiration = utils.to_epoch(credentials.get("Expiration", ""))
-        self.config.set(profile, "output", self.output)
-        self.config.set(profile, "region", self.region)
-        if account_name != "":
-            self.config.set(profile, "account_name", account_name)
-        if account_id != "":
-            self.config.set(profile, "account_id", account_id)
-        self.config.set(profile, "aws_access_key_id", credentials.get("AccessKeyId", "None"))
-        self.config.set(profile, "aws_secret_access_key", credentials.get("SecretAccessKey", "None"))
-        self.config.set(profile, "aws_session_token", credentials.get("SessionToken", "None"))
-        self.config.set(profile, "aws_credentials_expiry", expiration)
-
-        # Write the AWS STS token into the AWS credential file
-        with open(self.credentialsfile, "w") as f:
-            self.config.write(f)
-
-    def fetch_aws_account_names(self, response):
+    def fetch_aws_account_names(self, response: requests.Response) -> Optional[requests.Response]:
+        """Posts ADFS form to get account list response"""
         hiddenform = response.soup.find("form", {"name": "hiddenform"})
         headers = {
             "Referer": response.url,
@@ -328,7 +211,7 @@ class STSAuth(object):
 
         return adfs_response
 
-    def generate_login_url(self, token):
+    def generate_login_url(self, token: Mapping[str, Mapping[str, str]]) -> str:
         federation_base_url = "https://signin.aws.amazon.com/federation"
         request_params = {
             "Action": "getSigninToken",
@@ -354,3 +237,30 @@ class STSAuth(object):
             base_url=federation_base_url, request_parameters=request_parameters
         )
         return request_url
+
+
+def fetch_aws_sts_token(
+    role_arn: str,
+    principal_arn: str,
+    assertion: str,
+    duration_seconds: Optional[int] = 3600,
+    aws_profile: Optional[str] = None,
+) -> Mapping[str, str]:
+    """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
+    try:
+        session = boto3.Session(profile_name=aws_profile)
+        sts = session.client("sts")
+    except ProfileNotFound as e:
+        click.secho(str(e), fg="red")
+        sys.exit(1)
+    except Exception as e:
+        # TODO: Proper exception and message
+        raise e
+
+    token = sts.assume_role_with_saml(
+        RoleArn=role_arn,
+        PrincipalArn=principal_arn,
+        SAMLAssertion=assertion,
+        DurationSeconds=duration_seconds,
+    )
+    return token
