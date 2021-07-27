@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import configparser
 from datetime import datetime
 from typing import Optional, Mapping
 

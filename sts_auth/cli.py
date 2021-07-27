@@ -8,7 +8,6 @@ import collections
 
 import click
 import click_log
-import configparser
 
 from sts_auth import utils
 from sts_auth import stsauth

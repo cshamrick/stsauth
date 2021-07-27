@@ -1,4 +1,4 @@
-from typing import Optional, List, Mapping
+from typing import Optional, Mapping
 from collections.abc import ValuesView
 
 from sts_auth import utils

@@ -1,12 +1,10 @@
 import os
-import sys
 import configparser
 from typing import Optional, Mapping
 
 import click
 
 from sts_auth import utils
-from sts_auth.profile import Profile
 from sts_auth.profile_set import ProfileSet
 from sts_auth.utils import logger
 
