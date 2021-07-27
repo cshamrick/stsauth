@@ -43,7 +43,10 @@ def cli():
     help="Program will prompt for input if not provided.",
 )
 @click.option(
-    "--idpentryurl", "-i", default=None, help="The initial url that starts the authentication process.",
+    "--idpentryurl",
+    "-i",
+    default=None,
+    help="The initial url that starts the authentication process.",
 )
 @click.option("--domain", "-d", help="The active directory domain.")
 @click.option(
@@ -56,7 +59,10 @@ def cli():
 @click.option("--profile", "-l", default=None, help="Name of config profile.")
 @click.option("--region", "-r", default=None, envvar="AWS_DEFAULT_REGION", help="The AWS region to use. ex: us-east-1")
 @click.option(
-    "--okta-org", "-k", default=None, help="The Okta organization to use. ex: my-organization",
+    "--okta-org",
+    "-k",
+    default=None,
+    help="The Okta organization to use. ex: my-organization",
 )
 @click.option(
     "--okta-shared-secret",
@@ -173,7 +179,9 @@ def authenticate(
 
     # Give the user some basic info as to what has just happened
     print_credentials_success(
-        sts_auth.credentialsfile, role_for_section, token.get("Credentials", {}).get("Expiration", ""),
+        sts_auth.credentialsfile,
+        role_for_section,
+        token.get("Credentials", {}).get("Expiration", ""),
     )
 
     if browser:
@@ -233,7 +241,8 @@ def profiles(credentialsfile: str, profile: str, query: str) -> None:
     help="The AWS Profile to assume the role-arn from. Uses AWS_PROFILE environment if available.",
 )
 @click.argument(
-    "role-arn", required=True,
+    "role-arn",
+    required=True,
 )
 @click.option(
     "--role-session-name",
@@ -249,7 +258,10 @@ def profiles(credentialsfile: str, profile: str, query: str) -> None:
     envvar="AWS_SHARED_CREDENTIALS_FILE",
 )
 def assume_role(
-    profile, role_arn, role_session_name, credentialsfile,
+    profile,
+    role_arn,
+    role_session_name,
+    credentialsfile,
 ):
     """Used to assume another AWS IAM Role."""
     credentialsfile = os.path.expanduser(credentialsfile)
@@ -260,12 +272,19 @@ def assume_role(
     account_id = parse_role_for_account_id(role_arn)
     if role_session_name is None:
         role_session_name = role_for_section
-    token = stsauth.fetch_aws_sts_token_assume_role(role_arn, role_session_name, profile, duration_seconds=3600,)
+    token = stsauth.fetch_aws_sts_token_assume_role(
+        role_arn,
+        role_session_name,
+        profile,
+        duration_seconds=3600,
+    )
 
     config.write(token, "Assumed Role", account_id, role_for_section)
     # Give the user some basic info as to what has just happened
     print_credentials_success(
-        config.credentialsfile, role_for_section, token.get("Credentials", {}).get("Expiration", ""),
+        config.credentialsfile,
+        role_for_section,
+        token.get("Credentials", {}).get("Expiration", ""),
     )
 
 
@@ -434,7 +453,10 @@ def parse_arn_from_input_profile(account_roles, profile):
     profile_split = profile.split("-")
     acct_number = profile_split[0]
     role_name = "-".join(profile_split[1:])
-    role = next((item for item in account_roles[acct_number] if item["label"] == role_name), None,)
+    role = next(
+        (item for item in account_roles[acct_number] if item["label"] == role_name),
+        None,
+    )
     if role is None:
         click.secho(
             "Profile not found!\n"

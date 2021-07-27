@@ -187,19 +187,31 @@ def generate_account_list_page():
     account_list_data = {
         "000000000000": {
             "name": "AccountOne",
-            "roles": ["arn:aws:iam::000000000000:role/ADFS-0a", "arn:aws:iam::000000000000:role/ADFS-0b",],
+            "roles": [
+                "arn:aws:iam::000000000000:role/ADFS-0a",
+                "arn:aws:iam::000000000000:role/ADFS-0b",
+            ],
         },
         "000000000001": {
             "name": "AccountTwo",
-            "roles": ["arn:aws:iam::000000000001:role/ADFS-1a", "arn:aws:iam::000000000001:role/ADFS-1b",],
+            "roles": [
+                "arn:aws:iam::000000000001:role/ADFS-1a",
+                "arn:aws:iam::000000000001:role/ADFS-1b",
+            ],
         },
         "000000000002": {
             "name": "AccountThree",
-            "roles": ["arn:aws:iam::000000000002:role/ADFS-2a", "arn:aws:iam::000000000002:role/ADFS-2b",],
+            "roles": [
+                "arn:aws:iam::000000000002:role/ADFS-2a",
+                "arn:aws:iam::000000000002:role/ADFS-2b",
+            ],
         },
         "000000000003": {
             "name": "",
-            "roles": ["arn:aws:iam::000000000002:role/ADFS-3a", "arn:aws:iam::000000000002:role/ADFS-3b",],
+            "roles": [
+                "arn:aws:iam::000000000002:role/ADFS-3a",
+                "arn:aws:iam::000000000002:role/ADFS-3b",
+            ],
         },
     }
 

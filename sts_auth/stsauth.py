@@ -258,13 +258,19 @@ def fetch_aws_sts_token(
         raise e
 
     token = sts.assume_role_with_saml(
-        RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion, DurationSeconds=duration_seconds,
+        RoleArn=role_arn,
+        PrincipalArn=principal_arn,
+        SAMLAssertion=assertion,
+        DurationSeconds=duration_seconds,
     )
     return token
 
 
 def fetch_aws_sts_token_assume_role(
-    role_arn: str, role_session_name: str, aws_profile: str, duration_seconds: Optional[int] = 3600,
+    role_arn: str,
+    role_session_name: str,
+    aws_profile: str,
+    duration_seconds: Optional[int] = 3600,
 ) -> Mapping[str, str]:
     """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
     try:
@@ -278,7 +284,11 @@ def fetch_aws_sts_token_assume_role(
         raise e
 
     try:
-        token = sts.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name, DurationSeconds=duration_seconds,)
+        token = sts.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName=role_session_name,
+            DurationSeconds=duration_seconds,
+        )
     except ClientError as e:
         click.secho(str(e), fg="red")
         sys.exit(1)
