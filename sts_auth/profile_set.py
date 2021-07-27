@@ -15,7 +15,7 @@ class ProfileSet(object):
         columns: Optional[map] = {
             "Account": "account",
             "Profile": "name",
-            "Expire Date": "expiry",
+            "Expire Date": "expiry_string",
             "Status": "status",
         },
     ):
