@@ -258,9 +258,6 @@ def fetch_aws_sts_token(
         raise e
 
     token = sts.assume_role_with_saml(
-        RoleArn=role_arn,
-        PrincipalArn=principal_arn,
-        SAMLAssertion=assertion,
-        DurationSeconds=duration_seconds,
+        RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion, DurationSeconds=duration_seconds,
     )
     return token
