@@ -261,3 +261,25 @@ def fetch_aws_sts_token(
         RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion, DurationSeconds=duration_seconds,
     )
     return token
+
+
+def fetch_aws_sts_token_assume_role(
+    role_arn: str, role_session_name: str, aws_profile: str, duration_seconds: Optional[int] = 3600,
+) -> Mapping[str, str]:
+    """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
+    try:
+        session = boto3.Session(profile_name=aws_profile)
+        sts = session.client("sts")
+    except ProfileNotFound as e:
+        click.secho(str(e), fg="red")
+        sys.exit(1)
+    except Exception as e:
+        # TODO: Proper exception and message
+        raise e
+
+    try:
+        token = sts.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name, DurationSeconds=duration_seconds,)
+    except ClientError as e:
+        click.secho(str(e), fg="red")
+        sys.exit(1)
+    return token

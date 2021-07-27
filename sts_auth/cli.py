@@ -225,6 +225,50 @@ def profiles(credentialsfile: str, profile: str, query: str) -> None:
             sys.exit(1)
 
 
+@cli.command()
+@click.option(
+    "--profile",
+    "-l",
+    envvar="AWS_PROFILE",
+    help="The AWS Profile to assume the role-arn from. Uses AWS_PROFILE environment if available.",
+)
+@click.argument(
+    "role-arn", required=True,
+)
+@click.option(
+    "--role-session-name",
+    default=None,
+    help="Specify if a custom session name is required. Otherwise a generated value will be used.",
+)
+@click.option(
+    "--credentialsfile",
+    "-c",
+    help="Path to AWS credentials file.",
+    default="~/.aws/credentials",
+    show_default=True,
+    envvar="AWS_SHARED_CREDENTIALS_FILE",
+)
+def assume_role(
+    profile, role_arn, role_session_name, credentialsfile,
+):
+    """Used to assume another AWS IAM Role."""
+    credentialsfile = os.path.expanduser(credentialsfile)
+    config = Config(credentialsfile)
+    config.load()
+
+    role_for_section = parse_role_for_profile(role_arn)
+    account_id = parse_role_for_account_id(role_arn)
+    if role_session_name is None:
+        role_session_name = role_for_section
+    token = stsauth.fetch_aws_sts_token_assume_role(role_arn, role_session_name, profile, duration_seconds=3600,)
+
+    config.write(token, "Assumed Role", account_id, role_for_section)
+    # Give the user some basic info as to what has just happened
+    print_credentials_success(
+        config.credentialsfile, role_for_section, token.get("Credentials", {}).get("Expiration", ""),
+    )
+
+
 def open_console(login_url, browser_path=None):
     msg = "Attempting to open the AWS Console..."
     click.secho(msg, fg="green")
@@ -319,6 +363,25 @@ def role_selection_is_valid(selection, account_roles):
         return False
 
     return True
+
+
+def parse_role_for_account_id(role: str) -> str:
+    """Returns the account ID for a given role.
+
+    Args:
+        role: The role to fetch the account ID from.
+
+    Returns:
+        Account Id.
+    """
+    account_id = "000000000000"
+
+    account_re = re.compile(r"::(\d+):")
+    _account_id = re.search(account_re, role)
+    if _account_id.groups():
+        account_id = _account_id.groups()[0]
+
+    return account_id
 
 
 def parse_role_for_profile(role):
