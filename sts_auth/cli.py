@@ -121,8 +121,8 @@ def authenticate(
     if not sts_auth.config.valid:
         sys.exit(1)
 
-    if (sts_auth.profile and sts_auth.profile.active) and not force:
-        prompt_for_unexpired_credentials(sts_auth.profile.name)
+    if (sts_auth.profile and sts_auth.config.profile_set.get(sts_auth.profile).active) and not force:
+        prompt_for_unexpired_credentials(sts_auth.config.profile_set.get(sts_auth.profile).name)
 
     saml_response = sts_auth.get_saml_response()
     adfs_response = sts_auth.fetch_aws_account_names(saml_response)
@@ -157,8 +157,8 @@ def authenticate(
 
     # Update to use the selected profile and re-check expiry
     sts_auth.profile = sts_auth.config.profile_set.get(role_for_section)
-    if not profile and (sts_auth.profile and sts_auth.profile.active) and not force:
-        prompt_for_unexpired_credentials(sts_auth.profile.name)
+    if not profile and (sts_auth.profile and sts_auth.config.profile_set.get(sts_auth.profile).active) and not force:
+        prompt_for_unexpired_credentials(sts_auth.config.profile_set.get(sts_auth.profile).name)
 
     if not sts_auth.config.values.has_section(profile) and profile is not None:
         sts_auth.config.values.add_section(profile)
