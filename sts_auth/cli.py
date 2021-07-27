@@ -28,7 +28,7 @@ with open(path_to_init, "r", encoding="utf8") as f:
 @click_log.simple_verbosity_option(utils.logger)
 @click.version_option(version=version)
 def cli():
-    """Entrypoint for CLI."""
+    """Tools for managing AWS credentials through an ADFS portal."""
     pass
 
 
@@ -104,7 +104,7 @@ def authenticate(
     output,
     force,
 ):
-
+    """Authenticate to and fetch credentials for AWS through an ADFS portal"""
     sts_auth = STSAuth(
         username=username,
         password=password,
