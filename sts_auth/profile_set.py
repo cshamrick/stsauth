@@ -12,22 +12,27 @@ class ProfileSet(object):
 
     def table(
         self,
-        columns: Optional[map] = {
+        columns: Optional[Mapping[str, str]] = {
             "Account": "account",
             "Profile": "name",
             "Expire Date": "expiry_string",
             "Status": "status",
         },
     ):
-        headers = list(columns.keys())
+        headers = list(columns.keys())  # type: ignore[union-attr]
         rows = [
             list(row)
-            for row in zip(*[[str(getattr(p, c, None)) for c in list(columns.values())] for p in self.profiles])
+            for row in zip(
+                *[
+                    [str(getattr(p, c, None)) for c in list(columns.values())]  # type: ignore[union-attr]
+                    for p in self.profiles
+                ]
+            )
         ]
         return utils.table_format(headers, rows)
 
-    def get(self, profile: str, default: Optional[str] = None) -> Profile:
-        lookup = default
+    def get(self, profile: str) -> Optional[Profile]:
+        lookup: Optional[Profile] = None
         try:
             lookup = next(filter(lambda p: p.name == profile, self.profiles))
         except StopIteration:

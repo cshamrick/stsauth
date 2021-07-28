@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from unittest import TestCase
 
 import configparser
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore[import]
 
 from sts_auth import utils
 from .fixtures import fixtures

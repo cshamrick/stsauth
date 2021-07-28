@@ -1,8 +1,9 @@
 import os
 import configparser
-from typing import Optional, Mapping
+from typing import Optional, Mapping, Dict
+from datetime import datetime
 
-import click
+import click  # type: ignore[import]
 
 from sts_auth import utils
 from sts_auth.profile_set import ProfileSet
@@ -16,20 +17,20 @@ class Config(object):
     :param user_values: KeywordArgs of user-provided values to merge into Config.
     """
 
-    def __init__(self, credentialsfile: str, **user_values: Optional[Mapping[str, str]]):
-        self.user_values = user_values
-        self.credentialsfile = os.path.expanduser(credentialsfile)
-        self.values = configparser.RawConfigParser()
+    def __init__(self, credentialsfile: str, **user_values: Optional[Dict[str, Optional[Mapping[str, str]]]]):
+        self.user_values: Dict[str, Optional[Mapping[str, str]]] = user_values  # type: ignore[assignment]
+        self.credentialsfile: str = os.path.expanduser(credentialsfile)
+        self.values: configparser.RawConfigParser = configparser.RawConfigParser()
         self.values.read(self.credentialsfile)
-        self.username = user_values.get("username")
-        self.password = user_values.get("password")
-        self.profile = user_values.get("profile")
-        self.region = user_values.get("region")
-        self.output = user_values.get("output")
-        self.idpentryurl = user_values.get("idpentryurl")
-        self.domain = user_values.get("domain")
-        self.okta_org = user_values.get("okta_org")
-        self.okta_shared_secret = user_values.get("okta_shared_secret")
+        self.username: str = user_values.get("username")  # type: ignore[assignment]
+        self.password: str = user_values.get("password")  # type: ignore[assignment]
+        self.profile: str = user_values.get("profile")  # type: ignore[assignment]
+        self.region: str = user_values.get("region")  # type: ignore[assignment]
+        self.output: str = user_values.get("output")  # type: ignore[assignment]
+        self.idpentryurl: str = user_values.get("idpentryurl")  # type: ignore[assignment]
+        self.domain: str = user_values.get("domain")  # type: ignore[assignment]
+        self.okta_org: str = user_values.get("okta_org")  # type: ignore[assignment]
+        self.okta_shared_secret: str = user_values.get("okta_shared_secret")  # type: ignore[assignment]
 
     @property
     def valid(self) -> bool:
@@ -38,10 +39,22 @@ class Config(object):
         :return bool: Whether or not the configuration is valid.
         """
         valid = True
-        url = self.values.get("default", "idpentryurl", fallback=self.user_values.get("idpentryurl"))
-        domain = self.values.get("default", "domain", fallback=self.user_values.get("domain"))
-        region = self.values.get("default", "region", fallback=self.user_values.get("region"))
-        output = self.values.get("default", "output", fallback=self.user_values.get("output"))
+
+        url = self.values.get(  # type: ignore[union-attr]
+            "default", "idpentryurl", fallback=self.user_values.get("idpentryurl")  # type: ignore[union-attr]
+        )
+
+        domain = self.values.get(  # type: ignore[union-attr]
+            "default", "domain", fallback=self.user_values.get("domain")  # type: ignore[union-attr]
+        )
+
+        region = self.values.get(  # type: ignore[union-attr]
+            "default", "region", fallback=self.user_values.get("region")  # type: ignore[union-attr]
+        )
+
+        output = self.values.get(  # type: ignore[union-attr]
+            "default", "output", fallback=self.user_values.get("output")  # type: ignore[union-attr]
+        )
 
         _map = {
             "idpentryurl": url,
@@ -68,22 +81,22 @@ class Config(object):
             msg = "Attribute {1!r} not set, using value from {0.credentialsfile!r}"
             if not self.region:
                 logger.debug(msg.format(self, "region"))
-                self.region = default.get("region")
+                self.region = default.get("region")  # type: ignore[assignment]
             if not self.output:
                 logger.debug(msg.format(self, "output"))
-                self.output = default.get("output")
+                self.output = default.get("output")  # type: ignore[assignment]
             if not self.idpentryurl:
                 logger.debug(msg.format(self, "idpentryurl"))
-                self.idpentryurl = default.get("idpentryurl")
+                self.idpentryurl = default.get("idpentryurl")  # type: ignore[assignment]
             if not self.domain:
                 logger.debug(msg.format(self, "domain"))
-                self.domain = default.get("domain")
+                self.domain = default.get("domain")  # type: ignore[assignment]
             if not self.okta_org:
                 logger.debug(msg.format(self, "okta_org"))
-                self.okta_org = default.get("okta_org")
+                self.okta_org = default.get("okta_org")  # type: ignore[assignment]
             if not self.okta_shared_secret:
                 logger.debug(msg.format(self, "okta_shared_secret"))
-                self.okta_shared_secret = default.get("okta_shared_secret")
+                self.okta_shared_secret = default.get("okta_shared_secret")  # type: ignore[assignment]
         else:
             logger.debug("Could not find 'default' section in {0.credentialsfile!r}!".format(self))
 
@@ -133,8 +146,10 @@ class Config(object):
 
         self.set_attribute("default", "idpentryurl", self.idpentryurl)
 
-        credentials = token.get("Credentials", {})
-        expiration = utils.to_epoch(credentials.get("Expiration", ""))
+        credentials: Mapping[str, str] = token.get("Credentials", {})  # type: ignore[assignment]
+        expiration_dt = datetime.strptime(str(credentials.get("Expiration")), "%Y-%m-%dT%H:%M:%SZ")
+        expiration = utils.to_epoch(expiration_dt)
+
         self.set_attribute(profile, "output", self.output)
         self.set_attribute(profile, "region", self.region)
         self.set_attribute(profile, "account_name", account_name)
@@ -142,7 +157,7 @@ class Config(object):
         self.set_attribute(profile, "aws_access_key_id", credentials.get("AccessKeyId", "None"))
         self.set_attribute(profile, "aws_secret_access_key", credentials.get("SecretAccessKey", "None"))
         self.set_attribute(profile, "aws_session_token", credentials.get("SessionToken", "None"))
-        self.set_attribute(profile, "aws_credentials_expiry", expiration)
+        self.set_attribute(profile, "aws_credentials_expiry", str(expiration))
 
         # Write the AWS STS token into the AWS credential file
         with open(self.credentialsfile, "w") as f:

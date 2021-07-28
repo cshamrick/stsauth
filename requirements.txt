@@ -1,11 +1,10 @@
-awscli <2
+# awscli <2
 boto3 <2
 beautifulsoup4 <5
-Click <8
+Click <9
 click-log <0.4
-configparser <4
 requests <3
 requests_ntlm <2
 lxml <5
 pyotp <3
-urllib3>=1.20
+urllib3<1.30

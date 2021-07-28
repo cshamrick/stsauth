@@ -1,7 +1,7 @@
 from datetime import datetime
 from configparser import SectionProxy
 
-import click
+import click  # type: ignore[import]
 
 from sts_auth import utils
 

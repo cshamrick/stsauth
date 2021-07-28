@@ -18,7 +18,7 @@ def get_state_token_from_response(response_text: str) -> Optional[str]:
     state_token_search = re.search(re.compile(r"var stateToken = '(.*?)';"), response_text)
     group_len = 0 if state_token_search is None else len(state_token_search.groups())
     if group_len == 1:
-        state_token = state_token_search.group(1)
+        state_token = state_token_search.group(1)  # type: ignore[union-attr]
         logger.debug("Found state_token: {}".format(state_token))
         return state_token
     return None
@@ -31,7 +31,7 @@ def parse_aws_account_names_from_response(response: Response) -> Mapping[str, st
     acct_map = {}
     if response is None:
         return acct_map
-    acct_list = response.soup.find_all("div", class_="saml-account-name")
+    acct_list = response.soup.find_all("div", class_="saml-account-name")  # type: ignore[attr-defined]
     logger.debug("Account List:\n" + str(acct_list))
     for _acct in acct_list:
         acct_id = ""
@@ -73,16 +73,16 @@ def format_roles_for_display(attrs: List[str], account_map: Mapping[str, str]) -
         item = {"label": role_name, "attr": attr, "id": acct_id, "name": acct_name}
         accts.append(item)
     sorted_acct_roles = [k for k in sorted(accts, key=lambda k: k["id"])]
-    account_roles = OrderedDict()
+    account_roles: OrderedDict = OrderedDict()
     for i, v in enumerate(sorted_acct_roles):
-        v["num"] = i
+        v["num"] = str(i)
         if v["id"] not in account_roles:
             account_roles[v["id"]] = []
         account_roles[v["id"]].append(v)
     return account_roles
 
 
-def parse_roles_from_assertion(assertion: str) -> List[str]:
+def parse_roles_from_assertion(assertion: str) -> List[Optional[str]]:
     """Given the base64 encoded assertion, return a list of roles.
 
     Args:
@@ -106,7 +106,7 @@ def parse_roles_from_assertion(assertion: str) -> List[str]:
     return roles
 
 
-def format_role_order(roles: List[str]) -> List[str]:
+def format_role_order(roles: List[Optional[str]]) -> List[Optional[str]]:
     """Given roles, returns them in the format: role_arn,principal_arn.
 
     The format of the attribute value should be role_arn,principal_arn
@@ -120,7 +120,7 @@ def format_role_order(roles: List[str]) -> List[str]:
         List of roles in the format: role_arn,principal_arn
     """
     for role in roles:
-        chunks = role.split(",")
+        chunks = role.split(",")  # type: ignore[union-attr]
         if "saml-provider" in chunks[0]:
             _role = chunks[1] + "," + chunks[0]
             index = roles.index(role)
@@ -228,5 +228,5 @@ def table_format(headers: List[str], values: List[List[str]]) -> None:
     for row_items in zip(*values):
         row = [None] * row_len
         row[::2] = row_items
-        row[1::2] = max_lens
+        row[1::2] = max_lens  # type: ignore[assignment]
         print(row_format.format(*row))

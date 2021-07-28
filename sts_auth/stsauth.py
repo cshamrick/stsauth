@@ -3,23 +3,19 @@ import re
 import sys
 from datetime import datetime
 from typing import Optional, Mapping
+from urllib.parse import urlparse, urlunparse
 
-import boto3
-import click
+import boto3  # type: ignore[import]
+import click  # type: ignore[import]
 import requests
-from requests_ntlm import HttpNtlmAuth
-from bs4 import BeautifulSoup
-from botocore.exceptions import ProfileNotFound, ClientError
+from requests_ntlm import HttpNtlmAuth  # type: ignore[import]
+from bs4 import BeautifulSoup  # type: ignore[import]
+from botocore.exceptions import ProfileNotFound, ClientError  # type: ignore[import]
 
 from sts_auth import utils
 from sts_auth.okta import Okta
 from sts_auth.config import Config
 from sts_auth.utils import logger
-
-try:
-    from urllib.parse import urlparse, urlunparse
-except ImportError:
-    from urlparse import urlparse, urlunparse
 
 
 class STSAuth(object):
@@ -57,15 +53,15 @@ class STSAuth(object):
         self.vip_access_security_code = vip_access_security_code
         self.config = Config(
             self.credentialsfile,
-            username=username,
-            password=password,
-            domain=domain,
-            idpentryurl=idpentryurl,
-            region=region,
-            output=output,
-            okta_org=okta_org,
-            okta_shared_secret=okta_shared_secret,
-            profile=profile,
+            username=username,  # type: ignore[arg-type]
+            password=password,  # type: ignore[arg-type]
+            domain=domain,  # type: ignore[arg-type]
+            idpentryurl=idpentryurl,  # type: ignore[arg-type]
+            region=region,  # type: ignore[arg-type]
+            output=output,  # type: ignore[arg-type]
+            okta_org=okta_org,  # type: ignore[arg-type]
+            okta_shared_secret=okta_shared_secret,  # type: ignore[arg-type]
+            profile=profile,  # type: ignore[arg-type]
         )
         self.config.load()
         self.profile = self.config.profile
@@ -78,7 +74,7 @@ class STSAuth(object):
         if not response:
             logger.debug("No response provided. Fetching IDP Entry URL...")
             response = self.session.get(self.config.idpentryurl)
-        response.soup = BeautifulSoup(response.text, "lxml")
+        response.soup = BeautifulSoup(response.text, "lxml")  # type: ignore[attr-defined]
         assertion_pattern = re.compile(r"name=\"SAMLResponse\" value=\"(.*)\"\s*/><noscript>")
         assertion = re.search(assertion_pattern, response.text)
 
@@ -87,12 +83,12 @@ class STSAuth(object):
             # we can attach the parsed assertion to the response object and
             # return the whole response for use later.
             # return account_map, assertion.group(1)
-            response.assertion = assertion.group(1)
+            response.assertion = assertion.group(1)  # type: ignore[attr-defined]
             return response
         logger.debug("No SAML assertion found in response. Attempting to log in...")
 
-        login_form = response.soup.find(id="loginForm")
-        okta_login = response.soup.find(id="okta-login-container")
+        login_form = response.soup.find(id="loginForm")  # type: ignore[attr-defined]
+        okta_login = response.soup.find(id="okta-login-container")  # type: ignore[attr-defined]
 
         if okta_login:
             state_token = utils.get_state_token_from_response(response.text)
@@ -135,7 +131,7 @@ class STSAuth(object):
             elif "pass" in name.lower():
                 payload[name] = self.config.password
             elif "security_code" in name.lower():
-                payload[name] = self.vip_access_security_code
+                payload[name] = self.vip_access_security_code  # type: ignore[assignment]
             else:
                 payload[name] = value
 
@@ -192,7 +188,7 @@ class STSAuth(object):
 
     def fetch_aws_account_names(self, response: requests.Response) -> Optional[requests.Response]:
         """Posts ADFS form to get account list response"""
-        hiddenform = response.soup.find("form", {"name": "hiddenform"})
+        hiddenform = response.soup.find("form", {"name": "hiddenform"})  # type: ignore[attr-defined]
         headers = {
             "Referer": response.url,
             "Content-Type": "application/x-www-form-urlencoded",
@@ -206,7 +202,7 @@ class STSAuth(object):
             msg_fmt = "Could not fetch account aliases from {} due to an exception. Using cached values!\n {}"
             click.secho(msg_fmt.format(url, str(e)), fg="red")
             return None
-        adfs_response.soup = BeautifulSoup(adfs_response.text, "lxml")
+        adfs_response.soup = BeautifulSoup(adfs_response.text, "lxml")  # type: ignore[attr-defined]
 
         return adfs_response
 
@@ -231,7 +227,7 @@ class STSAuth(object):
             "Destination": "https://console.aws.amazon.com/",
             "SigninToken": signin_token["SigninToken"],
         }
-        request_parameters = requests.compat.urlencode(login_params)
+        request_parameters = requests.compat.urlencode(login_params)  # type: ignore[attr-defined]
         request_url = "{base_url}?{request_parameters}".format(
             base_url=federation_base_url, request_parameters=request_parameters
         )
@@ -246,16 +242,8 @@ def fetch_aws_sts_token(
     aws_profile: Optional[str] = None,
 ) -> Mapping[str, str]:
     """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
-    try:
-        session = boto3.Session(profile_name=aws_profile)
-        sts = session.client("sts")
-    except ProfileNotFound as e:
-        click.secho(str(e), fg="red")
-        sys.exit(1)
-    except Exception as e:
-        # TODO: Proper exception and message
-        raise e
 
+    sts = sts_client(aws_profile)
     token = sts.assume_role_with_saml(
         RoleArn=role_arn,
         PrincipalArn=principal_arn,
@@ -272,16 +260,8 @@ def fetch_aws_sts_token_assume_role(
     duration_seconds: Optional[int] = 3600,
 ) -> Mapping[str, str]:
     """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
-    try:
-        session = boto3.Session(profile_name=aws_profile)
-        sts = session.client("sts")
-    except ProfileNotFound as e:
-        click.secho(str(e), fg="red")
-        sys.exit(1)
-    except Exception as e:
-        # TODO: Proper exception and message
-        raise e
 
+    sts = sts_client(aws_profile)
     try:
         token = sts.assume_role(
             RoleArn=role_arn,
@@ -292,3 +272,18 @@ def fetch_aws_sts_token_assume_role(
         click.secho(str(e), fg="red")
         sys.exit(1)
     return token
+
+
+def sts_client(aws_profile: Optional[str]) -> boto3.Session.client:
+    """Generate a boto3 sts client."""
+
+    try:
+        session = boto3.Session(profile_name=aws_profile)
+        sts = session.client("sts")
+    except ProfileNotFound as e:
+        click.secho(str(e), fg="red")
+        sys.exit(1)
+    except Exception as e:
+        # TODO: Proper exception and message
+        raise e
+    return sts

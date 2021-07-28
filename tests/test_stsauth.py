@@ -1,10 +1,7 @@
-import ipdb
 from unittest import TestCase
+from unittest.mock import MagicMock
 
-try:
-    from unittest.mock import MagicMock
-except ImportError:
-    from mock import MagicMock
+import ipdb  # type: ignore[import]
 
 from sts_auth.stsauth import STSAuth
 

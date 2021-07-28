@@ -1,6 +1,6 @@
 import re
 import os
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages  # type: ignore[import]
 
 
 def get_requirements(env=""):
@@ -15,7 +15,7 @@ def get_requirements(env=""):
 
 
 with open("sts_auth/__init__.py", "r", encoding="utf8") as f:
-    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
+    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)  # type: ignore[union-attr]
 
 
 long_description = ""

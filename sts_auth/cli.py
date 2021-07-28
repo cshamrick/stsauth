@@ -6,8 +6,8 @@ import sys
 import webbrowser
 import collections
 
-import click
-import click_log
+import click  # type: ignore[import]
+import click_log  # type: ignore[import]
 
 from sts_auth import utils
 from sts_auth import stsauth
@@ -20,7 +20,7 @@ click_log.basic_config(utils.logger)
 bundle_dir = getattr(sys, "_MEIPASS", os.path.abspath(os.path.dirname(__file__)))
 path_to_init = os.path.abspath(os.path.join(bundle_dir, "__init__.py"))
 with open(path_to_init, "r", encoding="utf8") as f:
-    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
+    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)  # type: ignore[union-attr]
 
 
 @click.group()
@@ -219,7 +219,7 @@ def profiles(credentialsfile: str, profile: str, query: str) -> None:
         if config.profile_set.get(profile):
             if query is not None:
                 try:
-                    value = config.profile_set.get(profile).query(query)
+                    value = config.profile_set.get(profile).query(query)  # type: ignore[union-attr]
                 except ValueError as e:
                     click.secho(str(e), fg="red")
                 else:
@@ -396,8 +396,8 @@ def parse_role_for_account_id(role: str) -> str:
 
     account_re = re.compile(r"::(\d+):")
     _account_id = re.search(account_re, role)
-    if _account_id.groups():
-        account_id = _account_id.groups()[0]
+    if _account_id.groups():  # type: ignore[union-attr]
+        account_id = _account_id.groups()[0]  # type: ignore[union-attr]
 
     return account_id
 
