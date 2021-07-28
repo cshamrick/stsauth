@@ -1,6 +1,6 @@
 import configparser
 from unittest import TestCase
-from mock import patch
+from mock import patch  # type: ignore[import]
 
 
 from sts_auth.config import Config
