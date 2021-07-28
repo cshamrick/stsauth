@@ -419,8 +419,8 @@ def parse_role_for_profile(role: str) -> str:
     account_re = re.compile(r"::(\d+):")
     _account_id = re.search(account_re, role)
     _role_name = role.split("/")
-    if _account_id.groups():
-        account_id = _account_id.groups()[0]
+    if _account_id.groups():  # type: ignore[union-attr]
+        account_id = _account_id.groups()[0]  # type: ignore[union-attr]
     if len(_role_name) == 2:
         role_name = _role_name[1]
 
