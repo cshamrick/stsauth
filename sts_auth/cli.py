@@ -5,6 +5,7 @@ import re
 import sys
 import webbrowser
 import collections
+from typing import Optional, Mapping
 
 import click  # type: ignore[import]
 import click_log  # type: ignore[import]
@@ -156,9 +157,9 @@ def authenticate(
     role_for_section = parse_role_for_profile(role_arn)
 
     # Update to use the selected profile and re-check expiry
-    sts_auth.profile = sts_auth.config.profile_set.get(role_for_section)
-    if not profile and (sts_auth.profile and sts_auth.config.profile_set.get(sts_auth.profile).active) and not force:
-        prompt_for_unexpired_credentials(sts_auth.config.profile_set.get(sts_auth.profile).name)
+    selected_profile = sts_auth.config.profile_set.get(role_for_section)
+    if not profile and selected_profile and selected_profile.active and not force:
+        prompt_for_unexpired_credentials(selected_profile.name)
 
     if not sts_auth.config.values.has_section(profile) and profile is not None:
         sts_auth.config.values.add_section(profile)
@@ -287,7 +288,7 @@ def assume_role(
     )
 
 
-def open_console(login_url, browser_path=None):
+def open_console(login_url: str, browser_path: Optional[str] = None) -> None:
     msg = "Attempting to open the AWS Console..."
     click.secho(msg, fg="green")
     private_flags = {
@@ -325,7 +326,7 @@ def open_console(login_url, browser_path=None):
         click.secho("{}\n{}".format(msg, str(e)), fg="red")
 
 
-def prompt_for_role(account_map, account_roles):
+def prompt_for_role(account_map: Mapping[str, str], account_roles: collections.OrderedDict) -> dict:
     """Prompts the user to select a role based off what roles are available to them.
 
     Provides a prompt listing out accounts available to the user and does some basic
@@ -346,20 +347,21 @@ def prompt_for_role(account_map, account_roles):
             click.secho("[{num}]: {label}".format(**role))
         click.secho("")
     click.secho("Selection: ", nl=False, fg="green")
-    selected_role_index = input()
-    selected_role_index = int(selected_role_index)
+    selected_role_index: int = int(input())
     flat_roles = [i for sl in account_roles.values() for i in sl]
 
     # Basic sanity check of input
     if not role_selection_is_valid(selected_role_index, flat_roles):
         return prompt_for_role(account_map, account_roles)
 
-    role = next((v for v in flat_roles if v["num"] == selected_role_index), None)
+    role = next((v for v in flat_roles if int(v["num"]) == selected_role_index), None)
+    utils.logger.debug("Selected Role: ")
+    utils.logger.debug(role)
 
     return role
 
 
-def role_selection_is_valid(selection, account_roles):
+def role_selection_is_valid(selection: int, account_roles: list) -> bool:
     """Checks that the user input is a valid selection
 
     Args:
@@ -402,7 +404,7 @@ def parse_role_for_account_id(role: str) -> str:
     return account_id
 
 
-def parse_role_for_profile(role):
+def parse_role_for_profile(role: str) -> str:
     """Returns a 'safe' profile name for a given role.
 
     Args:
@@ -425,7 +427,7 @@ def parse_role_for_profile(role):
     return "{}-{}".format(account_id, role_name)
 
 
-def prompt_for_unexpired_credentials(profile):
+def prompt_for_unexpired_credentials(profile: str) -> None:
     """Prompts the user if the given profile's credentials have not expired yet.
 
     Args:
@@ -438,7 +440,7 @@ def prompt_for_unexpired_credentials(profile):
     click.confirm(msg, abort=True)
 
 
-def parse_arn_from_input_profile(account_roles, profile):
+def parse_arn_from_input_profile(account_roles: collections.OrderedDict, profile: str) -> dict:
     """Given a list of account/role details, return the ARNs for the given profile
 
     Args:
