@@ -5,14 +5,15 @@ import re
 import sys
 import webbrowser
 import collections
+from typing import Optional, Mapping
 
-import click
-import click_log
-import configparser
+import click  # type: ignore[import]
+import click_log  # type: ignore[import]
 
 from sts_auth import utils
 from sts_auth import stsauth
 from sts_auth.stsauth import STSAuth
+from sts_auth.config import Config
 
 click_log.basic_config(utils.logger)
 
@@ -20,13 +21,14 @@ click_log.basic_config(utils.logger)
 bundle_dir = getattr(sys, "_MEIPASS", os.path.abspath(os.path.dirname(__file__)))
 path_to_init = os.path.abspath(os.path.join(bundle_dir, "__init__.py"))
 with open(path_to_init, "r", encoding="utf8") as f:
-    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
+    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)  # type: ignore[union-attr]
 
 
 @click.group()
 @click_log.simple_verbosity_option(utils.logger)
 @click.version_option(version=version)
 def cli():
+    """Tools for managing AWS credentials through an ADFS portal."""
     pass
 
 
@@ -52,9 +54,10 @@ def cli():
     "-c",
     help="Path to AWS credentials file.",
     default="~/.aws/credentials",
+    envvar="AWS_SHARED_CREDENTIALS_FILE",
 )
 @click.option("--profile", "-l", default=None, help="Name of config profile.")
-@click.option("--region", "-r", default=None, help="The AWS region to use. ex: us-east-1")
+@click.option("--region", "-r", default=None, envvar="AWS_DEFAULT_REGION", help="The AWS region to use. ex: us-east-1")
 @click.option(
     "--okta-org",
     "-k",
@@ -84,7 +87,7 @@ def cli():
         "in your config file `default` section to your browser executable."
     ),
 )
-@click.option("--output", "-o", default=None, type=click.Choice(["json", "text", "table"]))
+@click.option("--output", "-o", default=None, envvar="AWS_DEFAULT_OUTPUT", type=click.Choice(["json", "text", "table"]))
 @click.option("--force", "-f", is_flag=True, help="Auto-accept confirmation prompts.")
 def authenticate(
     username,
@@ -101,7 +104,7 @@ def authenticate(
     output,
     force,
 ):
-
+    """Authenticate to and fetch credentials for AWS through an ADFS portal"""
     sts_auth = STSAuth(
         username=username,
         password=password,
@@ -116,20 +119,18 @@ def authenticate(
         output=output,
     )
 
-    if not sts_auth.config_file_is_valid:
+    if not sts_auth.config.valid:
         sys.exit(1)
 
-    if not sts_auth.credentials_expired and not force:
-        prompt_for_unexpired_credentials(sts_auth.profile)
-
-    sts_auth.parse_config_file()
+    if (sts_auth.profile and sts_auth.config.profile_set.get(sts_auth.profile).active) and not force:
+        prompt_for_unexpired_credentials(sts_auth.config.profile_set.get(sts_auth.profile).name)
 
     saml_response = sts_auth.get_saml_response()
     adfs_response = sts_auth.fetch_aws_account_names(saml_response)
     if adfs_response is not None:
         account_map = utils.parse_aws_account_names_from_response(adfs_response)
     else:
-        account_map = utils.parse_aws_account_names_from_config(sts_auth.config)
+        account_map = sts_auth.config.profile_set.aws_account_names
     # Parse the returned assertion and extract the authorized roles
     awsroles = utils.parse_roles_from_assertion(saml_response.assertion)
     account_roles = utils.format_roles_for_display(awsroles, account_map)
@@ -156,49 +157,36 @@ def authenticate(
     role_for_section = parse_role_for_profile(role_arn)
 
     # Update to use the selected profile and re-check expiry
-    sts_auth.profile = role_for_section
-    if not profile and not sts_auth.credentials_expired and not force:
-        prompt_for_unexpired_credentials(sts_auth.profile)
+    selected_profile = sts_auth.config.profile_set.get(role_for_section)
+    if not profile and selected_profile and selected_profile.active and not force:
+        prompt_for_unexpired_credentials(selected_profile.name)
 
-    if not sts_auth.config.has_section(profile) and profile is not None:
-        sts_auth.config.add_section(profile)
+    if not sts_auth.config.values.has_section(profile) and profile is not None:
+        sts_auth.config.values.add_section(profile)
 
     with open(sts_auth.credentialsfile, "w") as f:
-        sts_auth.config.write(f)
+        sts_auth.config.values.write(f)
 
     click.secho("\nRequesting credentials for role: " + role_arn, fg="green")
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
-    token = sts_auth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion, aws_profile=profile)
+    token = stsauth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion, aws_profile=profile)
 
     # Put the credentials into a role specific section
     acct_name = role.get("name", "")
     acct_id = role.get("id", "")
-    sts_auth.write_to_configuration_file(token, acct_name, acct_id, role_for_section)
+    sts_auth.config.write(token, acct_name, acct_id, role_for_section)
 
     # Give the user some basic info as to what has just happened
-    msg = (
-        "\n------------------------------------------------------------\n"
-        "Your new access key pair has been generated with the following details:\n"
-        "------------------------------------------------------------\n"
-        "File Path: {config_file}\n"
-        "Profile: {role}\n"
-        "Expiration Date: {expiry}\n"
-        "------------------------------------------------------------\n"
-        "To use this credential, call the AWS CLI with the --profile option:\n"
-        "e.g. aws --profile {role} ec2 describe-instances\n"
-        "Or provided as an environment variable:\n"
-        "export AWS_PROFILE={role}\n"
-        "--------------------------------------------------------------\n".format(
-            config_file=sts_auth.credentialsfile,
-            expiry=token.get("Credentials", {}).get("Expiration", ""),
-            role=role_for_section,
-        )
+    print_credentials_success(
+        sts_auth.credentialsfile,
+        role_for_section,
+        token.get("Credentials", {}).get("Expiration", ""),
     )
-    click.secho(msg, fg="green")
+
     if browser:
         login_url = sts_auth.generate_login_url(token)
-        browser_path = sts_auth.config.get("default", "browser_path", fallback=None)
+        browser_path = sts_auth.config.values.get("default", "browser_path", fallback=None)
         open_console(login_url, browser_path)
 
 
@@ -208,41 +196,99 @@ def authenticate(
     "-c",
     help="Path to AWS credentials file.",
     default="~/.aws/credentials",
+    envvar="AWS_SHARED_CREDENTIALS_FILE",
 )
 @click.argument("profile", nargs=1, required=False)
 @click.option("--query", "-q", help="Value to query from the profile.")
-def profiles(credentialsfile, profile, query):
+def profiles(credentialsfile: str, profile: str, query: str) -> None:
     """Lists the profile details from the credentialsfile or a specified profile.
 
     Args:
-        credentialsfile: the file containing the profile details.
-        profile: (Optional) a specific profile to print details for.
+        credentialsfile: The file containing the profile details.
+        profile: (Optional) A specific profile to print details for.
     """
     credentialsfile = os.path.expanduser(credentialsfile)
-    config = configparser.RawConfigParser()
-    config.read(credentialsfile)
+    config = Config(credentialsfile)
 
     if profile is None:
         if query is not None:
             click.secho("When using the 'query' parameter, 'profile' is required.", fg="red")
             sys.exit(1)
         else:
-            headers = ["Account", "Profile", "Expire Date", "Status"]
-            profiles = fetch_profiles_from_config(config)
-            print_table_format(headers, profiles)
+            config.profile_set.table()
     else:
-        if config.has_section(profile):
+        if config.profile_set.get(profile):
             if query is not None:
-                fetch_profile_attribute(config, profile, query)
+                try:
+                    value = config.profile_set.get(profile).query(query)  # type: ignore[union-attr]
+                except ValueError as e:
+                    click.secho(str(e), fg="red")
+                else:
+                    click.secho(value)
             else:
-                print_profile(config, profile)
+                click.secho(str(config.profile_set.get(profile)))
         else:
             msg = "Section '{}' does not exist in {}!"
             click.secho(msg.format(profile, credentialsfile), fg="red")
             sys.exit(1)
 
 
-def open_console(login_url, browser_path=None):
+@cli.command()
+@click.option(
+    "--profile",
+    "-l",
+    envvar="AWS_PROFILE",
+    help="The AWS Profile to assume the role-arn from. Uses AWS_PROFILE environment if available.",
+)
+@click.argument(
+    "role-arn",
+    required=True,
+)
+@click.option(
+    "--role-session-name",
+    default=None,
+    help="Specify if a custom session name is required. Otherwise a generated value will be used.",
+)
+@click.option(
+    "--credentialsfile",
+    "-c",
+    help="Path to AWS credentials file.",
+    default="~/.aws/credentials",
+    show_default=True,
+    envvar="AWS_SHARED_CREDENTIALS_FILE",
+)
+def assume_role(
+    profile,
+    role_arn,
+    role_session_name,
+    credentialsfile,
+):
+    """Used to assume another AWS IAM Role."""
+    credentialsfile = os.path.expanduser(credentialsfile)
+    config = Config(credentialsfile)
+    config.load()
+
+    role_for_section = parse_role_for_profile(role_arn)
+    account_id = parse_role_for_account_id(role_arn)
+    if role_session_name is None:
+        role_session_name = role_for_section
+    token = stsauth.fetch_aws_sts_token_assume_role(
+        role_arn,
+        role_session_name,
+        profile,
+        duration_seconds=3600,
+    )
+
+    config.write(token, "Assumed Role", account_id, role_for_section)
+    # Give the user some basic info as to what has just happened
+    print_credentials_success(
+        config.credentialsfile,
+        role_for_section,
+        token.get("Credentials", {}).get("Expiration", ""),
+    )
+
+
+def open_console(login_url: str, browser_path: Optional[str] = None) -> None:
     msg = "Attempting to open the AWS Console..."
     click.secho(msg, fg="green")
     private_flags = {
@@ -280,97 +326,7 @@ def open_console(login_url, browser_path=None):
         click.secho("{}\n{}".format(msg, str(e)), fg="red")
 
 
-def fetch_profiles_from_config(config):
-    profiles = config.sections()
-    expiry = []
-    statuses = []
-    accounts = []
-
-    for profile in profiles:
-        account = config.get(profile, "account", fallback="None")
-        accounts.append(account)
-
-        profile_expiry = config.get(profile, "aws_credentials_expiry", fallback=None)
-        profile_expiry_string = str(utils.from_epoch(profile_expiry)) if profile_expiry else "No Expiry Set"
-        expiry.append(profile_expiry_string)
-
-        is_active = utils.is_profile_active(config, profile)
-        statuses.append("Active" if is_active else "Expired")
-
-    return [accounts, profiles, expiry, statuses]
-
-
-def print_table_format(headers, values):
-    """Formats and prints tabular formatted data.
-
-    headers = ['col1', 'col2']
-    values  = [
-        ['row1col1', 'row2col1'],
-        ['row1col2', 'row2col2']
-    ]
-
-    Output:
-    col1     col2
-    -------- --------
-    row1col1 row2col1
-    row1col2 row2col2
-
-    Args:
-        headers: A list of the headers for each column.
-        values: A list of lists, each list containing a column of data.
-    """
-    if len(headers) != len(values):
-        raise Exception("Not enough headers for columns.")
-    row_format = ""
-    max_lens = []
-    for i, v in enumerate(values):
-        row_format += "{{{0}:<{{{1}}}}} ".format(i * 2, (i * 2) + 1)
-        v.insert(0, headers[i])
-        max_len = len(max(v, key=len))
-        max_lens.append(max_len)
-        v.insert(1, ("-" * max_len))
-
-    row_len = len(values) + len(max_lens)
-    for row_items in zip(*values):
-        row = [None] * row_len
-        row[::2] = row_items
-        row[1::2] = max_lens
-        print(row_format.format(*row))
-
-
-def print_profile(config, profile):
-    click.secho("[{}]".format(profile), fg="green")
-    for k, v in config.items(profile):
-        click.secho("{}=".format(k), fg="blue", nl=False)
-        if k == "aws_credentials_expiry":
-            v = "{} ({})".format(v, str(utils.from_epoch(v)))
-        click.secho(v, fg="green")
-
-    click.secho("status=", fg="blue", nl=False)
-    if utils.is_profile_active(config, profile):
-        click.secho("active", fg="green")
-    else:
-        click.secho("expired", fg="red")
-
-
-def fetch_profile_attribute(config, profile, query):
-    profile_attributes = dict(config.items(profile))
-    is_active = utils.is_profile_active(config, profile)
-    profile_attributes["status"] = "active" if is_active else "expired"
-    attribute_value = profile_attributes.get(query)
-
-    if attribute_value is None:
-        click.secho(
-            "Invalid value {!r} for 'query' parameter. Valid choices:".format(query),
-            fg="red",
-        )
-        click.secho(", ".join(profile_attributes.keys()), fg="red")
-        sys.exit(1)
-    else:
-        click.secho(attribute_value)
-
-
-def prompt_for_role(account_map, account_roles):
+def prompt_for_role(account_map: Mapping[str, str], account_roles: collections.OrderedDict) -> dict:
     """Prompts the user to select a role based off what roles are available to them.
 
     Provides a prompt listing out accounts available to the user and does some basic
@@ -391,20 +347,21 @@ def prompt_for_role(account_map, account_roles):
             click.secho("[{num}]: {label}".format(**role))
         click.secho("")
     click.secho("Selection: ", nl=False, fg="green")
-    selected_role_index = input()
-    selected_role_index = int(selected_role_index)
+    selected_role_index: int = int(input())
     flat_roles = [i for sl in account_roles.values() for i in sl]
 
     # Basic sanity check of input
     if not role_selection_is_valid(selected_role_index, flat_roles):
         return prompt_for_role(account_map, account_roles)
 
-    role = next((v for v in flat_roles if v["num"] == selected_role_index), None)
+    role = next((v for v in flat_roles if int(v["num"]) == selected_role_index), None)
+    utils.logger.debug("Selected Role: ")
+    utils.logger.debug(role)
 
     return role
 
 
-def role_selection_is_valid(selection, account_roles):
+def role_selection_is_valid(selection: int, account_roles: list) -> bool:
     """Checks that the user input is a valid selection
 
     Args:
@@ -428,7 +385,26 @@ def role_selection_is_valid(selection, account_roles):
     return True
 
 
-def parse_role_for_profile(role):
+def parse_role_for_account_id(role: str) -> str:
+    """Returns the account ID for a given role.
+
+    Args:
+        role: The role to fetch the account ID from.
+
+    Returns:
+        Account Id.
+    """
+    account_id = "000000000000"
+
+    account_re = re.compile(r"::(\d+):")
+    _account_id = re.search(account_re, role)
+    if _account_id.groups():  # type: ignore[union-attr]
+        account_id = _account_id.groups()[0]  # type: ignore[union-attr]
+
+    return account_id
+
+
+def parse_role_for_profile(role: str) -> str:
     """Returns a 'safe' profile name for a given role.
 
     Args:
@@ -443,15 +419,15 @@ def parse_role_for_profile(role):
     account_re = re.compile(r"::(\d+):")
     _account_id = re.search(account_re, role)
     _role_name = role.split("/")
-    if _account_id.groups():
-        account_id = _account_id.groups()[0]
+    if _account_id.groups():  # type: ignore[union-attr]
+        account_id = _account_id.groups()[0]  # type: ignore[union-attr]
     if len(_role_name) == 2:
         role_name = _role_name[1]
 
     return "{}-{}".format(account_id, role_name)
 
 
-def prompt_for_unexpired_credentials(profile):
+def prompt_for_unexpired_credentials(profile: str) -> None:
     """Prompts the user if the given profile's credentials have not expired yet.
 
     Args:
@@ -464,7 +440,7 @@ def prompt_for_unexpired_credentials(profile):
     click.confirm(msg, abort=True)
 
 
-def parse_arn_from_input_profile(account_roles, profile):
+def parse_arn_from_input_profile(account_roles: collections.OrderedDict, profile: str) -> dict:
     """Given a list of account/role details, return the ARNs for the given profile
 
     Args:
@@ -492,6 +468,24 @@ def parse_arn_from_input_profile(account_roles, profile):
         )
         sys.exit()
     return role
+
+
+def print_credentials_success(config_file_path: str, profile: str, expiry: str) -> None:
+    msg = (
+        "\n------------------------------------------------------------\n"
+        "Your new access key pair has been generated with the following details:\n"
+        "------------------------------------------------------------\n"
+        f"File Path: {config_file_path}\n"
+        f"Profile: {profile}\n"
+        f"Expiration Date: {expiry}\n"
+        "------------------------------------------------------------\n"
+        "To use this credential, call the AWS CLI with the --profile option:\n"
+        f"e.g. aws --profile {profile} ec2 describe-instances\n"
+        "Or provided as an environment variable:\n"
+        f"export AWS_PROFILE={profile}\n"
+        "--------------------------------------------------------------\n"
+    )
+    click.secho(msg, fg="green")
 
 
 if __name__ == "__main__":

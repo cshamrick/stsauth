@@ -1,4 +1,5 @@
 tox
+ipython
 ipdb
 mock
 nose

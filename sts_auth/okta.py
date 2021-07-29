@@ -2,9 +2,9 @@ import re
 import sys
 import time
 
-import click
-import pyotp
-from bs4 import BeautifulSoup
+import click  # type: ignore[import]
+import pyotp  # type: ignore[import]
+from bs4 import BeautifulSoup  # type: ignore[import]
 
 from sts_auth.utils import logger
 
