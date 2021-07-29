@@ -14,19 +14,14 @@ from sts_auth import utils
 from sts_auth import stsauth
 from sts_auth.stsauth import STSAuth
 from sts_auth.config import Config
+from setuptools_scm import get_version
 
 click_log.basic_config(utils.logger)
 
 
-bundle_dir = getattr(sys, "_MEIPASS", os.path.abspath(os.path.dirname(__file__)))
-path_to_init = os.path.abspath(os.path.join(bundle_dir, "__init__.py"))
-with open(path_to_init, "r", encoding="utf8") as f:
-    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)  # type: ignore[union-attr]
-
-
 @click.group()
 @click_log.simple_verbosity_option(utils.logger)
-@click.version_option(version=version)
+@click.version_option(version=get_version(root="..", relative_to=__file__))
 def cli():
     """Tools for managing AWS credentials through an ADFS portal."""
     pass

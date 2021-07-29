@@ -1,5 +1,11 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
+
 [tool.black]
 line-length = 120
 
 [tool.mypy]
 show_error_codes = true
+
+[tool.setuptools_scm]
+write_to = "sts_auth/__init__.py"
