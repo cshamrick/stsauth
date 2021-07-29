@@ -1,0 +1,37 @@
+---
+branches:
+  - main
+preset: conventionalcommits
+tagFormat: "v${version}"
+
+plugins:
+  - "@semantic-release/commit-analyzer"
+  - "@semantic-release/release-notes-generator"
+  - "@semantic-release/changelog"
+  - "@semantic-release/git"
+  - "@semantic-release/github"
+
+verifyConditions:
+  - "@semantic-release/changelog"
+  - "@semantic-release/git"
+  - "@semantic-release/github"
+
+analyzeCommits:
+  - path: "@semantic-release/commit-analyzer"
+
+generateNotes:
+  - path: "@semantic-release/release-notes-generator"
+
+prepare:
+  - path: "@semantic-release/changelog"
+    changelogFile: "CHANGELOG.md"
+  - path: "@semantic-release/git"
+
+publish:
+  - path: "@semantic-release/github"
+
+success:
+  - "@semantic-release/github"
+
+fail:
+  - "@semantic-release/github"
