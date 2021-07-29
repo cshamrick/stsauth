@@ -1,7 +1,7 @@
 import re
 import os
 from setuptools import setup, find_packages  # type: ignore[import]
-from setuptools_scm import get_version
+from setuptools_scm import get_version  # type: ignore[import]
 
 
 def get_requirements(env=""):
