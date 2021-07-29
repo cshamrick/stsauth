@@ -8,4 +8,4 @@ line-length = 120
 show_error_codes = true
 
 [tool.setuptools_scm]
-write_to = "sts_auth/__init__.py"
+write_to = "sts_auth/_version.py"
