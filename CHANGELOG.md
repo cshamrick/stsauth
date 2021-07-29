@@ -1,3 +1,34 @@
+## [1.0.0](https://github.com/cshamrick/stsauth/compare/v0.9.0...v1.0.0) (2021-07-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **setup.py:** 
+* 
+
+### Features
+
+* **cli.py,-stsauth.py:** add assume-role command to manage assume role credentials ([f87ff18](https://github.com/cshamrick/stsauth/commit/f87ff1879f14a6c13c96a92574756700922d9955))
+
+
+### Bug Fixes
+
+* adds back an empty `sts_auth/__init__.py` and writes the version to `sts_auth/_version.py` ([1d6e1a6](https://github.com/cshamrick/stsauth/commit/1d6e1a6f858047a9aa651ad60ae620392a881754))
+* fixes unexpired credentials check ([4bb74af](https://github.com/cshamrick/stsauth/commit/4bb74afe7368763eee3d84ab20e139c2d842239b))
+* **cli.py:** fix references to sts_auth.profile ([3e897f4](https://github.com/cshamrick/stsauth/commit/3e897f49999d9749093cf84e80da1bb016d206a5))
+* **config.py:** use dateutil.parser to handle more date formats ([0bda79d](https://github.com/cshamrick/stsauth/commit/0bda79d0472ccb439b3f7bbb351c1c72fcf60dc0))
+* **profile_set.py:** change expiry output to use formatted string ([86225d9](https://github.com/cshamrick/stsauth/commit/86225d9fa575c03b1b8a227f33ba15296fdf73c2))
+
+
+### Code Refactoring
+
+* refactor to include Config, Profile, and ProfileSet classes ([5a81f25](https://github.com/cshamrick/stsauth/commit/5a81f25da7daee49d11459a87d01532b762e0fa0))
+
+
+### Build System
+
+* **setup.py:** remove python 2 classifiers ([57b0a28](https://github.com/cshamrick/stsauth/commit/57b0a283af8f34c2652cca4af2643e1dfee19a72))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
