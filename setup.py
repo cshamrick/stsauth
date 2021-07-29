@@ -1,6 +1,7 @@
 import re
 import os
 from setuptools import setup, find_packages  # type: ignore[import]
+from setuptools_scm import get_version  # type: ignore[import]
 
 
 def get_requirements(env=""):
@@ -14,10 +15,6 @@ def get_requirements(env=""):
         return []
 
 
-with open("sts_auth/__init__.py", "r", encoding="utf8") as f:
-    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)  # type: ignore[union-attr]
-
-
 long_description = ""
 if os.path.exists("README.md"):
     with open("README.md", "r") as fh:
@@ -28,7 +25,7 @@ tests_require = get_requirements("test")
 
 setup(
     name="stsauth",
-    version=version,
+    version=get_version(relative_to=__file__),
     author="Scott Hamrick",
     author_email="scott@scotthamrick.com",
     description="CLI tool for fetching AWS tokens.",
