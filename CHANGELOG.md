@@ -1,3 +1,10 @@
+### [1.0.1](https://github.com/cshamrick/stsauth/compare/v1.0.0...v1.0.1) (2021-07-29)
+
+
+### Bug Fixes
+
+* **.github/workflows/publish-pypi.yml:** installs `setuptools_scm` before publishing to pypi ([164aefc](https://github.com/cshamrick/stsauth/commit/164aefc89bef49d950c1a3137ed2450ea0d18320))
+
 ## [1.0.0](https://github.com/cshamrick/stsauth/compare/v0.9.0...v1.0.0) (2021-07-29)
 
 
