@@ -8,6 +8,8 @@ on:
       - "main"
       - "feature/*"
       - "hotfix/*"
+  release:
+    types: [published]
 
 jobs:
   deploy:
@@ -30,6 +32,6 @@ jobs:
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name == 'release' }}
         run: |
           twine upload dist/*
