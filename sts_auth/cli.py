@@ -14,14 +14,13 @@ from sts_auth import utils
 from sts_auth import stsauth
 from sts_auth.stsauth import STSAuth
 from sts_auth.config import Config
-from setuptools_scm import get_version  # type: ignore[import]
 
 click_log.basic_config(utils.logger)
 
 
 @click.group()
 @click_log.simple_verbosity_option(utils.logger)
-@click.version_option(version=get_version(root="..", relative_to=__file__))
+@click.version_option(package_name="stsauth")
 def cli():
     """Tools for managing AWS credentials through an ADFS portal."""
     pass
