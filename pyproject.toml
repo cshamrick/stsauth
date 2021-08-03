@@ -1,5 +1,6 @@
 [build-system]
 requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
+build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 120
@@ -9,3 +10,18 @@ show_error_codes = true
 
 [tool.setuptools_scm]
 write_to = "sts_auth/_version.py"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+skipsdist=True
+minversion=2.3.1
+envlist = py37,py38,py39
+
+[testenv]
+deps =
+    .[tests]
+commands =
+    coverage run -m pytest {posargs}
+    coverage xml
+"""

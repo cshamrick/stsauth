@@ -1,8 +1,6 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-import ipdb  # type: ignore[import]
-
 from sts_auth.stsauth import STSAuth
 
 
@@ -16,5 +14,4 @@ class TestSTSAuth(TestCase):
         self.sts_auth.config = MagicMock(return_value=config)
 
     def test_sts_auth(self):
-        # ipdb.set_trace()
         self.assertEqual(1, 1)
