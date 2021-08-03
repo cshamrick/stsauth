@@ -21,6 +21,28 @@ class TestGetStateTokenFromResponse(TestCase):
         self.assertEqual(_token, token)
 
 
+class TestIsValidAccountId(TestCase):
+    def setUp(self):
+        self.acct_id_1 = "000000000000"
+        self.acct_id_2 = 100000000001
+        self.short_acct_id_1 = "00000000"
+        self.short_acct_id_2 = 10000000
+
+    def test_valid_account_id_str(self):
+        self.assertTrue(utils.is_valid_account_id(self.acct_id_1))
+
+    def test_valid_account_id_int(self):
+        with self.assertRaises(TypeError):
+            utils.is_valid_account_id(self.acct_id_2)
+
+    def test_invalid_account_id_str(self):
+        self.assertFalse(utils.is_valid_account_id(self.short_acct_id_1))
+
+    def test_invalid_account_id_int(self):
+        with self.assertRaises(TypeError):
+            self.assertFalse(utils.is_valid_account_id(self.short_acct_id_2))
+
+
 class TestFormatRolesForDisplay(TestCase):
     def test_format_roles_for_display_full(self):
         attrs = fixtures.full_attributes
@@ -34,8 +56,9 @@ class TestFormatRolesForDisplay(TestCase):
 
     # def test_format_roles_for_display_out_of_order(self):
     #     attrs = fixtures.out_of_order_attributes
-    #     account_roles = utils.format_roles_for_display(attrs)
-    #     self.assertDictEqual(fixtures.full_account_roles, account_roles)
+    #     account_map = fixtures.account_map
+    #     account_roles = utils.format_roles_for_display(attrs, account_map)
+    #     self.assertDictEqual(fixtures.full_account_roles, dict(account_roles))
 
 
 class TestParseRolesFromAssertion(TestCase):
