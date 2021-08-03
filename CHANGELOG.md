@@ -1,3 +1,10 @@
+### [1.0.2](https://github.com/cshamrick/stsauth/compare/v1.0.1...v1.0.2) (2021-08-03)
+
+
+### Bug Fixes
+
+* **Dockerfile:** fix docker build ([d492181](https://github.com/cshamrick/stsauth/commit/d492181cf0e15cd50c303faf13d216322de2f4c4))
+
 ### [1.0.1](https://github.com/cshamrick/stsauth/compare/v1.0.0...v1.0.1) (2021-07-29)
 
 
