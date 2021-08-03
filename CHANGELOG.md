@@ -1,3 +1,10 @@
+### [1.0.3](https://github.com/cshamrick/stsauth/compare/v1.0.2...v1.0.3) (2021-08-03)
+
+
+### Bug Fixes
+
+* **setup.cfg:** update to require Click>=8,<9 ([5cf7456](https://github.com/cshamrick/stsauth/commit/5cf7456277e4aafb1d0c924acfd8b24a683a2cef))
+
 ### [1.0.2](https://github.com/cshamrick/stsauth/compare/v1.0.1...v1.0.2) (2021-08-03)
 
 
