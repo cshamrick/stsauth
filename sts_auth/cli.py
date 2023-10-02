@@ -255,13 +255,11 @@ def profiles(credentialsfile: str, profile: str, query: str) -> None:
     show_default=True,
     envvar="AWS_SHARED_CREDENTIALS_FILE",
 )
-@click.option("--duration", "-e", default=3600, help="Session duration in seconds.")
 def assume_role(
     profile,
     role_arn,
     role_session_name,
     credentialsfile,
-    duration,
 ):
     """Used to assume another AWS IAM Role."""
     credentialsfile = os.path.expanduser(credentialsfile)
@@ -276,7 +274,7 @@ def assume_role(
         role_arn,
         role_session_name,
         profile,
-        duration_seconds=duration,
+        duration_seconds=3600,
     )
 
     config.write(token, "Assumed Role", account_id, role_for_section)
