@@ -254,14 +254,14 @@ def fetch_aws_sts_token(
         return token
     except ClientError as e:
         if (
-            "The requested DurationSeconds exceeds the MaxSessionDuration set for this role." 
+            "The requested DurationSeconds exceeds the MaxSessionDuration set for this role."
             == e.response['Error']['Message']
         ):
             msg = "The requested duration exceeds the maximum duration set by your AWS administrator."
             click.secho(msg, fg="red")
             sys.exit(1)
         elif (
-            "'durationSeconds' failed to satisfy constraint: Member must have value less than or equal to 43200" 
+            "'durationSeconds' failed to satisfy constraint: Member must have value less than or equal to 43200"
             in e.response['Error']['Message']
         ):
             msg = "The requested duration exceeds the 12 hour (43200 second) maximum imposed by AWS."
