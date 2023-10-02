@@ -136,6 +136,9 @@ Options:
                                   section to your browser executable.
 
   -o, --output [json|text|table]
+  -e, --duration NUM              The duration in seconds of the requested session.
+                                  [default: 3600]
+
   -f, --force                     Auto-accept confirmation prompts.
   --help                          Show this message and exit.
 ```
@@ -223,6 +226,9 @@ Options:
 
   -c, --credentialsfile TEXT  Path to AWS credentials file.  [default:
                               ~/.aws/credentials]
+
+  -e, --duration NUM          The duration in seconds of the requested session.
+                              [default: 3600]
 
   --help                      Show this message and exit.
 ```
