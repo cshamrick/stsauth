@@ -166,13 +166,7 @@ def authenticate(
     click.secho("\nRequesting credentials for role: " + role_arn, fg="green")
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
-    token = stsauth.fetch_aws_sts_token(
-        role_arn, 
-        principal_arn, 
-        saml_response.assertion, 
-        duration_seconds=duration, 
-        aws_profile=profile
-    )
+    token = stsauth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion, duration_seconds=duration, aws_profile=profile)
 
     # Put the credentials into a role specific section
     acct_name = role.get("name", "")
