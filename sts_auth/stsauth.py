@@ -169,7 +169,7 @@ class STSAuth(object):
 
         logger.debug("Posting login data to URL: {}".format(idp_auth_form_submit_url))
         login_response = self.session.post(idp_auth_form_submit_url, data=payload, verify=True)
-        login_response_page = BeautifulSoup(login_response.text, "html.parser")
+        login_response_page = BeautifulSoup(login_response.text, "html.parser") # type: ignore[attr-defined]
         # Checks for errorText id on page to indicate any errors
         login_error_message = login_response_page.find(id="errorText")
         # Checks for specific text in a paragraph element to indicate any errors
@@ -181,7 +181,7 @@ class STSAuth(object):
         ):
             msg = "Login page returned the following message. Please resolve this issue before continuing:"
             click.secho(msg, fg="red")
-            error_msg = login_error_message if login_error_message else vip_login_error_message
+            error_msg = login_error_message if login_error_message else vip_login_error_message # type: ignore[attr-defined]
             click.secho(error_msg.string, fg="red")
             sys.exit(1)
         return login_response
