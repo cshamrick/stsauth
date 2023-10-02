@@ -244,13 +244,25 @@ def fetch_aws_sts_token(
     """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
 
     sts = sts_client(aws_profile)
-    token = sts.assume_role_with_saml(
-        RoleArn=role_arn,
-        PrincipalArn=principal_arn,
-        SAMLAssertion=assertion,
-        DurationSeconds=duration_seconds,
-    )
-    return token
+    try:
+        token = sts.assume_role_with_saml(
+            RoleArn=role_arn,
+            PrincipalArn=principal_arn,
+            SAMLAssertion=assertion,
+            DurationSeconds=duration_seconds,
+        )
+        return token
+    except ClientError as e:
+        if "The requested DurationSeconds exceeds the MaxSessionDuration set for this role." == e.response['Error']['Message']:
+            msg = "The requested duration exceeds the maximum duration set by your AWS administrator."
+            click.secho(msg, fg="red")
+            sys.exit(1)
+        elif "'durationSeconds' failed to satisfy constraint: Member must have value less than or equal to 43200" in e.response['Error']['Message']:
+            msg = "The requested duration exceeds the 12 hour (43200 second) maximum imposed by AWS."
+            click.secho(msg, fg="red")
+            sys.exit(1)
+        else:
+            raise e
 
 
 def fetch_aws_sts_token_assume_role(
