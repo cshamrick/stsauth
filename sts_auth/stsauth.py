@@ -171,18 +171,18 @@ class STSAuth(object):
         login_response = self.session.post(idp_auth_form_submit_url, data=payload, verify=True)
         login_response_page = BeautifulSoup(login_response.text, "html.parser")
         # Checks for errorText id on page to indicate any errors
-        login_error_message = login_response_page.find(id="errorText")  # type: ignore[attr-defined]
+        login_error_message = login_response_page.find(id="errorText")
         # Checks for specific text in a paragraph element to indicate any errors
         vip_login_error_message = login_response_page.find(
             lambda tag: tag.name == "p" and "Authentication failed" in tag.text
         )
-        if (login_error_message and len(login_error_message.string) > 0) or (
+        if (login_error_message and len(login_error_message.string) > 0) or (  # type: ignore[union-attr, arg-type]
             vip_login_error_message and len(vip_login_error_message) > 0
         ):
             msg = "Login page returned the following message. Please resolve this issue before continuing:"
             click.secho(msg, fg="red")
             error_msg = login_error_message if login_error_message else vip_login_error_message
-            click.secho(error_msg.string, fg="red")  # type: ignore[attr-defined]
+            click.secho(error_msg.string, fg="red")  # type: ignore[union-attr]
             sys.exit(1)
         return login_response
 
