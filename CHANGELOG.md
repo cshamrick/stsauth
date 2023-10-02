@@ -46,7 +46,7 @@
 * refactor to include Config, Profile, and ProfileSet classes ([5a81f25](https://github.com/cshamrick/stsauth/commit/5a81f25da7daee49d11459a87d01532b762e0fa0))
 
 
-### Build System
+### Build Tool
 
 * **setup.py:** remove python 2 classifiers ([57b0a28](https://github.com/cshamrick/stsauth/commit/57b0a283af8f34c2652cca4af2643e1dfee19a72))
 
