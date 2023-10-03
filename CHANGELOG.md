@@ -1,3 +1,10 @@
+## [1.1.0](https://github.com/cshamrick/stsauth/compare/v1.0.3...v1.1.0) (2023-10-03)
+
+
+### Features
+
+* add session duration options ([#71](https://github.com/cshamrick/stsauth/issues/71)) ([186f415](https://github.com/cshamrick/stsauth/commit/186f415e696642e952f105e23f70793d5721c828))
+
 ### [1.0.3](https://github.com/cshamrick/stsauth/compare/v1.0.2...v1.0.3) (2021-08-03)
 
 
