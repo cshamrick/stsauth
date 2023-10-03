@@ -2,7 +2,7 @@ import os
 import configparser
 from typing import Optional, Mapping, Dict
 from datetime import datetime
-import dateutil  # type: ignore[import]
+from dateutil import parser  # type: ignore[import]
 
 import click  # type: ignore[import]
 
@@ -148,7 +148,7 @@ class Config(object):
         self.set_attribute("default", "idpentryurl", self.idpentryurl)
 
         credentials: Mapping[str, str] = token.get("Credentials", {})  # type: ignore[assignment]
-        expiration_dt = dateutil.parser.parse(str(credentials.get("Expiration")))
+        expiration_dt = parser.parse(str(credentials.get("Expiration")))
         expiration = utils.to_epoch(expiration_dt)
 
         self.set_attribute(profile, "output", self.output)

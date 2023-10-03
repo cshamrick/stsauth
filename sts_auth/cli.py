@@ -82,6 +82,7 @@ def cli():
     ),
 )
 @click.option("--output", "-o", default=None, envvar="AWS_DEFAULT_OUTPUT", type=click.Choice(["json", "text", "table"]))
+@click.option("--duration", "-e", default=3600, help="Session duration in seconds.")
 @click.option("--force", "-f", is_flag=True, help="Auto-accept confirmation prompts.")
 def authenticate(
     username,
@@ -93,6 +94,7 @@ def authenticate(
     okta_org,
     okta_shared_secret,
     vip_access_security_code,
+    duration,
     browser,
     region,
     output,
@@ -164,7 +166,9 @@ def authenticate(
     click.secho("\nRequesting credentials for role: " + role_arn, fg="green")
 
     # Use the assertion to get an AWS STS token using Assume Role with SAML
-    token = stsauth.fetch_aws_sts_token(role_arn, principal_arn, saml_response.assertion, aws_profile=profile)
+    token = stsauth.fetch_aws_sts_token(
+        role_arn, principal_arn, saml_response.assertion, duration_seconds=duration, aws_profile=profile
+    )
 
     # Put the credentials into a role specific section
     acct_name = role.get("name", "")

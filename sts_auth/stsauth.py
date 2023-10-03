@@ -176,13 +176,13 @@ class STSAuth(object):
         vip_login_error_message = login_response_page.find(
             lambda tag: tag.name == "p" and "Authentication failed" in tag.text
         )
-        if (login_error_message and len(login_error_message.string) > 0) or (
+        if (login_error_message and len(login_error_message.string) > 0) or (  # type: ignore[union-attr, arg-type]
             vip_login_error_message and len(vip_login_error_message) > 0
         ):
             msg = "Login page returned the following message. Please resolve this issue before continuing:"
             click.secho(msg, fg="red")
             error_msg = login_error_message if login_error_message else vip_login_error_message
-            click.secho(error_msg.string, fg="red")
+            click.secho(error_msg.string, fg="red")  # type: ignore[union-attr]
             sys.exit(1)
         return login_response
 
@@ -244,13 +244,31 @@ def fetch_aws_sts_token(
     """Use the assertion to get an AWS STS token using `assume_role_with_saml`"""
 
     sts = sts_client(aws_profile)
-    token = sts.assume_role_with_saml(
-        RoleArn=role_arn,
-        PrincipalArn=principal_arn,
-        SAMLAssertion=assertion,
-        DurationSeconds=duration_seconds,
-    )
-    return token
+    try:
+        token = sts.assume_role_with_saml(
+            RoleArn=role_arn,
+            PrincipalArn=principal_arn,
+            SAMLAssertion=assertion,
+            DurationSeconds=duration_seconds,
+        )
+        return token
+    except ClientError as e:
+        if (
+            "The requested DurationSeconds exceeds the MaxSessionDuration set for this role."
+            == e.response["Error"]["Message"]
+        ):
+            msg = "The requested duration exceeds the maximum duration set by your AWS administrator."
+            click.secho(msg, fg="red")
+            sys.exit(1)
+        elif (
+            "'durationSeconds' failed to satisfy constraint: Member must have value less than or equal to 43200"
+            in e.response["Error"]["Message"]
+        ):
+            msg = "The requested duration exceeds the 12 hour (43200 second) maximum imposed by AWS."
+            click.secho(msg, fg="red")
+            sys.exit(1)
+        else:
+            raise e
 
 
 def fetch_aws_sts_token_assume_role(

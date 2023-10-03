@@ -12,7 +12,7 @@
 ![PyPI - License](https://img.shields.io/pypi/l/stsauth)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/stsauth)
 
-Creates a temporary `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` that can be used with cli tools such as `awscli`, `ansible`, `terraform` and more.
+Creates a temporary `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` that can be used with command-line tools such as `awscli`, `ansible`, `terraform` and more.
 
 This method of authentication is preferred because it eliminates the need for long-lived access keys and forces every user to use their own credentials when connecting to AWS Services.
 
@@ -136,6 +136,9 @@ Options:
                                   section to your browser executable.
 
   -o, --output [json|text|table]
+  -e, --duration NUM              The duration in seconds of the requested session.
+                                  [default: 3600]
+
   -f, --force                     Auto-accept confirmation prompts.
   --help                          Show this message and exit.
 ```
@@ -249,7 +252,7 @@ export AWS_PROFILE=000000000002-Assume-Role-One
 
 ## Warning
 
-It is **strongly** recommended to use Okta Push Notifications for MFA if at all possible. Storing your Shared Secret or passing it in through the command line comes with the risk of exposing the Shared Secret to unintended persons. If compromised, the security of MFA is lost. **Please proceed with caution and an understanding of the risks associated. _If you believe your Shared Secret has been compromised, please revoke it immediately._**
+It is **strongly** recommended to use Okta Push Notifications for MFA if at all possible. Storing your Shared Secret or passing it in through the command-line comes with the risk of exposing the Shared Secret to unintended persons. If compromised, the security of MFA is lost. **Please proceed with caution and an understanding of the risks associated. _If you believe your Shared Secret has been compromised, please revoke it immediately._**
 
 ## Troubleshooting
 
