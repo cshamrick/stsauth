@@ -13,8 +13,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 14
+          node-version: 18
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
-        run: npx -p semantic-release -p @semantic-release/git -p @semantic-release/changelog -p conventional-changelog-conventionalcommits semantic-release
+        run: npx -y -p semantic-release -p @semantic-release/git -p @semantic-release/changelog -p conventional-changelog-conventionalcommits semantic-release
