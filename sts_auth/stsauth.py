@@ -8,6 +8,7 @@ from urllib.parse import urlparse, urlunparse
 import boto3  # type: ignore[import]
 import click  # type: ignore[import]
 import requests
+import backoff  # type: ignore[import]
 from requests_ntlm import HttpNtlmAuth  # type: ignore[import]
 from bs4 import BeautifulSoup  # type: ignore[import]
 from botocore.exceptions import ProfileNotFound, ClientError  # type: ignore[import]
@@ -70,6 +71,13 @@ class STSAuth(object):
         self.session.headers.update({"content-type": "application/json"})
         self.session.auth = HttpNtlmAuth(self.config.domain_user, self.config.password)
 
+    @backoff.on_exception(
+        backoff.expo,
+        requests.exceptions.ConnectionError,
+        max_tries=5,
+        on_backoff=utils.backoff_log_handler,
+        logger=None,
+    )
     def get_saml_response(self, response: Optional[requests.Response] = None) -> requests.Response:
         if not response:
             logger.debug("No response provided. Fetching IDP Entry URL...")
