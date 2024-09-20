@@ -8,6 +8,7 @@ from xml.etree import ElementTree
 from typing import List, Optional, Mapping
 
 from requests import Response
+from click import secho
 
 FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
 logging.basicConfig(format=FORMAT)
@@ -230,3 +231,10 @@ def table_format(headers: List[str], values: List[List[str]]) -> None:
         row[::2] = row_items
         row[1::2] = max_lens  # type: ignore[assignment]
         print(row_format.format(*row))
+
+
+def backoff_log_handler(details):
+    secho(
+        "Backing off {wait:0.1f} seconds after {tries} tries calling function {target.__name__}".format(**details),
+        fg="red",
+    )

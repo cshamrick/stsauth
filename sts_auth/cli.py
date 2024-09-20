@@ -9,6 +9,7 @@ from typing import Optional, Mapping
 
 import click  # type: ignore[import]
 import click_log  # type: ignore[import]
+from requests import exceptions as requests_exceptions
 
 from sts_auth import utils
 from sts_auth import stsauth
@@ -84,7 +85,7 @@ def cli():
 @click.option("--output", "-o", default=None, envvar="AWS_DEFAULT_OUTPUT", type=click.Choice(["json", "text", "table"]))
 @click.option("--duration", "-e", default=3600, help="Session duration in seconds.")
 @click.option("--force", "-f", is_flag=True, help="Auto-accept confirmation prompts.")
-def authenticate(
+def authenticate(  # noqa: C901
     username,
     password,
     idpentryurl,
@@ -120,8 +121,11 @@ def authenticate(
 
     if (sts_auth.profile and sts_auth.config.profile_set.get(sts_auth.profile).active) and not force:
         prompt_for_unexpired_credentials(sts_auth.config.profile_set.get(sts_auth.profile).name)
-
-    saml_response = sts_auth.get_saml_response()
+    try:
+        saml_response = sts_auth.get_saml_response()
+    except requests_exceptions.ConnectionError as e:
+        click.secho(f"Received the following error for the login portal:\n{str(e)}", fg="red")
+        sys.exit()
     adfs_response = sts_auth.fetch_aws_account_names(saml_response)
     if adfs_response is not None:
         account_map = utils.parse_aws_account_names_from_response(adfs_response)
