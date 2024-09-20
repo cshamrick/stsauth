@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
-      # To report GitHub Actions status checks
       statuses: write
     steps:
       - name: Checkout Code
@@ -24,14 +22,13 @@ jobs:
           # super-linter needs the full git history to get the
           # list of files that changed across commits
           fetch-depth: 0
+      - name: Load super-linter configuration
+        # Use grep inverse matching to exclude eventual comments in the .env file
+        # because the GitHub Actions command to set environment variables doesn't
+        # support comments.
+        # Ref: https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#setting-an-environment-variable
+        run: grep -v '^#' .github/super-linter.env >> "$GITHUB_ENV"
       - name: super-linter
         uses: super-linter/super-linter/slim@v7.1.0
         env:
-          LINTER_RULES_PATH: /
-          VALIDATE_HTML: false
-          VALIDATE_MARKDOWN: false
-          VALIDATE_PYTHON_PYLINT: false
-          VALIDATE_PYTHON_ISORT: false
-          PYTHON_BLACK_CONFIG_FILE: pyproject.toml
-          PYTHON_MYPY_CONFIG_FILE: pyproject.toml
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

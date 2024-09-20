@@ -8,7 +8,7 @@ from urllib.parse import urlparse, urlunparse
 import boto3  # type: ignore[import]
 import click  # type: ignore[import]
 import requests
-import backoff
+import backoff  # type: ignore[import]
 from requests_ntlm import HttpNtlmAuth  # type: ignore[import]
 from bs4 import BeautifulSoup  # type: ignore[import]
 from botocore.exceptions import ProfileNotFound, ClientError  # type: ignore[import]
