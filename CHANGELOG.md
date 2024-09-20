@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/cshamrick/stsauth/compare/v1.1.0...v1.1.1) (2024-09-20)
+
+### Bug Fixes
+
+* handle connection errors more gracefully ([0497547](https://github.com/cshamrick/stsauth/commit/049754726aeeccba43c5a0343c4a25a87758c587))
+
 ## [1.1.0](https://github.com/cshamrick/stsauth/compare/v1.0.3...v1.1.0) (2023-10-03)
 
 ### Features
