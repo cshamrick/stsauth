@@ -6,15 +6,26 @@ on:
   pull_request:
     branches: [main]
 
+permissions: {}
+
 jobs:
   build:
     name: super-linter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      # To report GitHub Actions status checks
+      statuses: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          # super-linter needs the full git history to get the
+          # list of files that changed across commits
+          fetch-depth: 0
       - name: super-linter
-        uses: docker://github/super-linter:v4
+        uses: super-linter/super-linter/slim@v7.1.0
         env:
           LINTER_RULES_PATH: /
           VALIDATE_HTML: false
