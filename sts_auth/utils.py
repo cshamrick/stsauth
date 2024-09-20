@@ -8,7 +8,7 @@ from xml.etree import ElementTree
 from typing import List, Optional, Mapping
 
 from requests import Response
-from click import secho
+from click import secho  # type: ignore[import]
 
 FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
 logging.basicConfig(format=FORMAT)

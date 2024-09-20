@@ -1,61 +1,53 @@
 ## [1.1.0](https://github.com/cshamrick/stsauth/compare/v1.0.3...v1.1.0) (2023-10-03)
 
-
 ### Features
 
-* add session duration options ([#71](https://github.com/cshamrick/stsauth/issues/71)) ([186f415](https://github.com/cshamrick/stsauth/commit/186f415e696642e952f105e23f70793d5721c828))
+- add session duration options ([#71](https://github.com/cshamrick/stsauth/issues/71)) ([186f415](https://github.com/cshamrick/stsauth/commit/186f415e696642e952f105e23f70793d5721c828))
 
 ### [1.0.3](https://github.com/cshamrick/stsauth/compare/v1.0.2...v1.0.3) (2021-08-03)
 
-
 ### Bugfixes
 
-* **setup.cfg:** update to require Click>=8,<9 ([5cf7456](https://github.com/cshamrick/stsauth/commit/5cf7456277e4aafb1d0c924acfd8b24a683a2cef))
+- **setup.cfg:** update to require Click>=8,<9 ([5cf7456](https://github.com/cshamrick/stsauth/commit/5cf7456277e4aafb1d0c924acfd8b24a683a2cef))
 
 ### [1.0.2](https://github.com/cshamrick/stsauth/compare/v1.0.1...v1.0.2) (2021-08-03)
 
-
 ### Bugfixes
 
-* **Dockerfile:** fix docker build ([d492181](https://github.com/cshamrick/stsauth/commit/d492181cf0e15cd50c303faf13d216322de2f4c4))
+- **Dockerfile:** fix docker build ([d492181](https://github.com/cshamrick/stsauth/commit/d492181cf0e15cd50c303faf13d216322de2f4c4))
 
 ### [1.0.1](https://github.com/cshamrick/stsauth/compare/v1.0.0...v1.0.1) (2021-07-29)
 
-
 ### Bugfixes
 
-* **.github/workflows/publish-pypi.yml:** installs `setuptools_scm` before publishing to pypi ([164aefc](https://github.com/cshamrick/stsauth/commit/164aefc89bef49d950c1a3137ed2450ea0d18320))
+- **.github/workflows/publish-pypi.yml:** installs `setuptools_scm` before publishing to pypi ([164aefc](https://github.com/cshamrick/stsauth/commit/164aefc89bef49d950c1a3137ed2450ea0d18320))
 
 ## [1.0.0](https://github.com/cshamrick/stsauth/compare/v0.9.0...v1.0.0) (2021-07-29)
 
-
 ### ⚠ BREAKING CHANGES
 
-* **setup.py:** 
-* 
+- **setup.py:**
+-
 
 ### Features
 
-* **cli.py,-stsauth.py:** add assume-role command to manage assume role credentials ([f87ff18](https://github.com/cshamrick/stsauth/commit/f87ff1879f14a6c13c96a92574756700922d9955))
-
+- **cli.py,-stsauth.py:** add assume-role command to manage assume role credentials ([f87ff18](https://github.com/cshamrick/stsauth/commit/f87ff1879f14a6c13c96a92574756700922d9955))
 
 ### Bugfixes
 
-* adds back an empty `sts_auth/__init__.py` and writes the version to `sts_auth/_version.py` ([1d6e1a6](https://github.com/cshamrick/stsauth/commit/1d6e1a6f858047a9aa651ad60ae620392a881754))
-* fixes unexpired credentials check ([4bb74af](https://github.com/cshamrick/stsauth/commit/4bb74afe7368763eee3d84ab20e139c2d842239b))
-* **cli.py:** fix references to sts_auth.profile ([3e897f4](https://github.com/cshamrick/stsauth/commit/3e897f49999d9749093cf84e80da1bb016d206a5))
-* **config.py:** use dateutil.parser to handle more date formats ([0bda79d](https://github.com/cshamrick/stsauth/commit/0bda79d0472ccb439b3f7bbb351c1c72fcf60dc0))
-* **profile_set.py:** change expiry output to use formatted string ([86225d9](https://github.com/cshamrick/stsauth/commit/86225d9fa575c03b1b8a227f33ba15296fdf73c2))
-
+- adds back an empty `sts_auth/__init__.py` and writes the version to `sts_auth/_version.py` ([1d6e1a6](https://github.com/cshamrick/stsauth/commit/1d6e1a6f858047a9aa651ad60ae620392a881754))
+- fixes unexpired credentials check ([4bb74af](https://github.com/cshamrick/stsauth/commit/4bb74afe7368763eee3d84ab20e139c2d842239b))
+- **cli.py:** fix references to sts_auth.profile ([3e897f4](https://github.com/cshamrick/stsauth/commit/3e897f49999d9749093cf84e80da1bb016d206a5))
+- **config.py:** use dateutil.parser to handle more date formats ([0bda79d](https://github.com/cshamrick/stsauth/commit/0bda79d0472ccb439b3f7bbb351c1c72fcf60dc0))
+- **profile_set.py:** change expiry output to use formatted string ([86225d9](https://github.com/cshamrick/stsauth/commit/86225d9fa575c03b1b8a227f33ba15296fdf73c2))
 
 ### Code Refactoring
 
-* refactor to include Config, Profile, and ProfileSet classes ([5a81f25](https://github.com/cshamrick/stsauth/commit/5a81f25da7daee49d11459a87d01532b762e0fa0))
-
+- refactor to include Config, Profile, and ProfileSet classes ([5a81f25](https://github.com/cshamrick/stsauth/commit/5a81f25da7daee49d11459a87d01532b762e0fa0))
 
 ### Build Tool
 
-* **setup.py:** remove python 2 classifiers ([57b0a28](https://github.com/cshamrick/stsauth/commit/57b0a283af8f34c2652cca4af2643e1dfee19a72))
+- **setup.py:** remove python 2 classifiers ([57b0a28](https://github.com/cshamrick/stsauth/commit/57b0a283af8f34c2652cca4af2643e1dfee19a72))
 
 # Changelog
 

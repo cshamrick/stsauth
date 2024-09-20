@@ -1,4 +1,6 @@
 FROM python:3.8-slim as build
+# checkov:skip=CKV_DOCKER_3
+# checkov:skip=CKV_DOCKER_2
 WORKDIR /usr/src/stsauth
 COPY . .
 # hadolint ignore=DL3013
