@@ -16,7 +16,7 @@ legacy_tox_ini = """
 [tox]
 skipsdist=True
 minversion=2.3.1
-envlist = py37,py38,py39
+envlist = py38,py39
 
 [testenv]
 deps =
