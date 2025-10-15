@@ -356,7 +356,7 @@ def prompt_for_role(account_map: Mapping[str, str], account_roles: collections.O
     if not role_selection_is_valid(selected_role_index, flat_roles):
         return prompt_for_role(account_map, account_roles)
 
-    role = next((v for v in flat_roles if int(v["num"]) == selected_role_index), None)
+    role = next((v for v in flat_roles if int(v["num"]) == selected_role_index), {})
     utils.logger.debug("Selected Role: ")
     utils.logger.debug(role)
 
