@@ -1,3 +1,13 @@
+## [2.0.0](https://github.com/cshamrick/stsauth/compare/v1.1.1...v2.0.0) (2025-10-15)
+
+### ⚠ BREAKING CHANGES
+
+* **py37:** 
+
+### Build System
+
+* **py37:** remove support for python3.7 ([a1a0a9e](https://github.com/cshamrick/stsauth/commit/a1a0a9ec0c86be7ceae49f11983c3b0646793451))
+
 ## [1.1.1](https://github.com/cshamrick/stsauth/compare/v1.1.0...v1.1.1) (2024-09-20)
 
 ### Bugfixes
