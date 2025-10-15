@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-from datetime import datetime
 from typing import Optional, Mapping
 from urllib.parse import urlparse, urlunparse
 
@@ -128,7 +127,7 @@ class STSAuth(object):
         login_page = BeautifulSoup(response.text, "html.parser")
         payload = {}
 
-        for input_tag in login_page.find_all(re.compile("(INPUT|input)")):
+        for input_tag in login_page.find(id="loginForm").find_all(re.compile("(INPUT|input)")):
             name = input_tag.get("name", "")
             value = input_tag.get("value", "")
             logger.debug("Adding value for {!r} to Login Form payload.".format(name))
@@ -191,6 +190,10 @@ class STSAuth(object):
             click.secho(msg, fg="red")
             error_msg = login_error_message if login_error_message else vip_login_error_message
             click.secho(error_msg.string, fg="red")  # type: ignore[union-attr]
+            sys.exit(1)
+        if not login_response.ok:
+            click.secho("Login page failed", fg="red")
+            logger.debug("Login Response: {}".format(login_response.text))
             sys.exit(1)
         return login_response
 
