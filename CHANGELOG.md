@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/cshamrick/stsauth/compare/v2.0.0...v2.0.1) (2025-10-15)
+
+### Bug Fixes
+
+* **stsauth:** Only parse input fields for the loginForm form to submit ([610abfa](https://github.com/cshamrick/stsauth/commit/610abfae69471cb16208a2f2538023090d1f1b8c))
+
 ## [2.0.0](https://github.com/cshamrick/stsauth/compare/v1.1.1...v2.0.0) (2025-10-15)
 
 ### ⚠ BREAKING CHANGES
