@@ -2,26 +2,85 @@
 requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "stsauth"
+dynamic = ["version"]
+authors = [{ name = "Scott Hamrick", email = "scott@scotthamrick.com" }]
+description = "CLI tool for fetching AWS tokens."
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+# # This below format is for py3.9 and above
+# license = "MIT"
+# license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "boto3 <2",
+    "beautifulsoup4 <5",
+    "Click >=8,<9",
+    "click-log <0.4",
+    "requests <3",
+    "requests_ntlm <2",
+    "lxml <5",
+    "pyotp <3",
+    "urllib3<1.30",
+    "importlib_metadata;python_version<'3.8'",
+    "backoff<2.3",
+]
+
+[dependency-groups]
+dist = ["build", "twine"]
+dev = ["ipython", "ipdb", "pylint"]
+tests = ["tox", "mock", "nose", "flake8", "pytest", "coverage", "pytest-cov"]
+
+[project.scripts]
+stsauth = "sts_auth.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/cshamrick/stsauth"
+Repository = "https://github.com/cshamrick/stsauth"
+Issues = "https://github.com/cshamrick/stsauth/issues"
+Changelog = "https://github.com/cshamrick/stsauth/blob/main/CHANGELOG.md"
+
 [tool.black]
 line-length = 120
 
 [tool.mypy]
 show_error_codes = true
 
+[tool.setuptools.packages]
+find = {}
+
 [tool.setuptools_scm]
 write_to = "sts_auth/_version.py"
 
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-skipsdist=True
-minversion=2.3.1
-envlist = py37,py38,py39
+requires = ["tox>=4"]
+env_list = ["py38", "py39"]
+skipsdist = true
 
-[testenv]
-deps =
-    .[tests]
-commands =
-    coverage run -m pytest {posargs}
-    coverage xml
-"""
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+deps = ["."]
+dependency_groups = ["tests"]
+commands = [
+    [
+        "coverage",
+        "run",
+        "-m",
+        "pytest",
+        "{posargs}",
+    ],
+    [
+        "coverage",
+        "xml",
+    ],
+]

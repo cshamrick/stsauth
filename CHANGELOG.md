@@ -1,8 +1,18 @@
+## [2.0.0](https://github.com/cshamrick/stsauth/compare/v1.1.1...v2.0.0) (2025-10-15)
+
+### ⚠ BREAKING CHANGES
+
+* **py37:** 
+
+### Build System
+
+* **py37:** remove support for python3.7 ([a1a0a9e](https://github.com/cshamrick/stsauth/commit/a1a0a9ec0c86be7ceae49f11983c3b0646793451))
+
 ## [1.1.1](https://github.com/cshamrick/stsauth/compare/v1.1.0...v1.1.1) (2024-09-20)
 
-### Bug Fixes
+### Bugfixes
 
-* handle connection errors more gracefully ([0497547](https://github.com/cshamrick/stsauth/commit/049754726aeeccba43c5a0343c4a25a87758c587))
+- handle connection errors more gracefully ([0497547](https://github.com/cshamrick/stsauth/commit/049754726aeeccba43c5a0343c4a25a87758c587))
 
 ## [1.1.0](https://github.com/cshamrick/stsauth/compare/v1.0.3...v1.1.0) (2023-10-03)
 
@@ -20,7 +30,7 @@
 
 ### Bugfixes
 
-- **Dockerfile:** fix docker build ([d492181](https://github.com/cshamrick/stsauth/commit/d492181cf0e15cd50c303faf13d216322de2f4c4))
+- **Dockerfile:** fix Docker build ([d492181](https://github.com/cshamrick/stsauth/commit/d492181cf0e15cd50c303faf13d216322de2f4c4))
 
 ### [1.0.1](https://github.com/cshamrick/stsauth/compare/v1.0.0...v1.0.1) (2021-07-29)
 
