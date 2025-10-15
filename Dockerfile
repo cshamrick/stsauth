@@ -8,7 +8,7 @@ RUN apt-get update -y \
     && apt-get install --no-install-recommends -y git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip \
+    && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --group dist \
     && python -m build
 
